@@ -2,7 +2,8 @@ import axios from 'axios';
 
 // 1. Cấu hình instance Axios
 const API = axios.create({
-    baseURL: 'http://localhost:5000/api'
+    // Ưu tiên lấy link từ biến môi trường Vercel, nếu không có sẽ dùng thẳng link Render
+    baseURL: import.meta.env.VITE_API_URL || 'https://auction-system-mern-xeyx.onrender.com/api'
 });
 
 // 2. Tự động đính kèm Token vào header
