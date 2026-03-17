@@ -1,16 +1,16 @@
 import { initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
-// Thêm 2 import này cho App Check
 import { initializeAppCheck, ReCaptchaV3Provider } from "firebase/app-check";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyDef4LiDjuU7dq_DS7kIqXLimh5vR-XpW4",
-  authDomain: "tjsh-da301.firebaseapp.com",
-  projectId: "tjsh-da301",
-  storageBucket: "tjsh-da301.firebasestorage.app",
-  messagingSenderId: "1029808226002",
-  appId: "1:1029808226002:web:cc997b68e972f5ff61b70b",
-  measurementId: "G-HL8XVF0E64"
+  // Sử dụng biến môi trường từ file .env
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY, 
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID,
+  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID
 };
 
 const app = initializeApp(firebaseConfig);
@@ -20,9 +20,9 @@ if (typeof window !== "undefined" && (location.hostname === "localhost" || locat
   self.FIREBASE_APPCHECK_DEBUG_TOKEN = true;
 }
 
-// 2. Cấu hình App Check
+// 2. Cấu hình App Check - Recaptcha Key cũng nên để trong .env
 const appCheck = initializeAppCheck(app, {
-  provider: new ReCaptchaV3Provider('6Lc3QossAAAAADGWtxJJBktq0uZwzNJMKqyohLXN'),
+  provider: new ReCaptchaV3Provider(import.meta.env.VITE_RECAPTCHA_SITE_KEY),
   isTokenAutoRefreshEnabled: true
 });
 
