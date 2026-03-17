@@ -34,6 +34,7 @@ const ScrollToTop = () => {
 // Component bảo vệ Route (Yêu cầu đăng nhập)
 const PrivateRoute = ({ children }) => {
   const token = localStorage.getItem('token');
+  // Nếu không có token, Navigate ngay lập tức về trang login
   return token ? children : <Navigate to="/login" replace />;
 };
 
@@ -43,19 +44,37 @@ function App() {
       <ScrollToTop />
       <div className="min-h-screen bg-gray-100 font-sans text-gray-900 antialiased">
         <Routes>
-          {/* --- AUTH ROUTES --- */}
+          {/* --- AUTH ROUTES (Công khai) --- */}
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
 
-          {/* --- PUBLIC ROUTES --- */}
-          <Route path="/" element={<Home />} />
-          <Route path="/home" element={<Home />} />
+          {/* --- PUBLIC ROUTES (Chỉ những trang thực sự muốn cho xem không cần login) --- */}
+          {/* Lưu ý: Nếu muốn bắt đăng nhập mới xem được chi tiết SP, hãy bọc ProductDetail vào PrivateRoute */}
           <Route path="/product/:id" element={<ProductDetail />} />
           <Route path="/profile/:id" element={<UserProfile />} />
           <Route path="/sold-products" element={<SoldProducts />} />
 
           {/* --- PROTECTED ROUTES (Cần login) --- */}
+
+          {/* Chuyển Home vào PrivateRoute để dứt điểm lỗi vào thẳng trang chủ */}
+          <Route
+            path="/"
+            element={
+              <PrivateRoute>
+                <Home />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/home"
+            element={
+              <PrivateRoute>
+                <Home />
+              </PrivateRoute>
+            }
+          />
+
           <Route
             path="/create-product"
             element={
@@ -144,6 +163,7 @@ function App() {
           />
 
           {/* --- 404 HANDLER --- */}
+          {/* Nếu gõ đường dẫn linh tinh, tự động đá về trang chủ (PrivateRoute sẽ kiểm tra login tại đây) */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </div>

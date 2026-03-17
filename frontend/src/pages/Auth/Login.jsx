@@ -12,19 +12,26 @@ const Login = () => {
     e.preventDefault();
     setLoading(true);
     try {
-      const { data } = await API.post('/auth/login', { email, password });
+      // 1. Gửi request đăng nhập
+      const response = await API.post('/auth/login', { email, password });
+      const resData = response.data;
 
-      localStorage.setItem('token', data.token);
+      // 2. Lưu thông tin vào LocalStorage
+      if (resData.token) {
+        localStorage.setItem('token', resData.token);
 
-      const userToStore = data.user ? data.user : data;
-      localStorage.setItem('user', JSON.stringify(userToStore));
+        // Đảm bảo lưu đúng object user
+        const userToStore = resData.user || resData;
+        localStorage.setItem('user', JSON.stringify(userToStore));
 
-      console.log('Đã lưu User vào Storage:', userToStore);
+        console.log('Đã lưu User và Token mới');
 
-      alert('Đăng nhập thành công!');
+        alert('Đăng nhập thành công!');
 
-      navigate('/');
-      window.location.reload();
+        // 3. Điều hướng và Ép tải lại trang để API Interceptor nhận Token mới
+        // Thay vì dùng navigate + reload, ta dùng window.location.href để dứt điểm lỗi 401 ban đầu
+        window.location.href = '/';
+      }
     } catch (error) {
       console.error('Lỗi đăng nhập:', error);
       alert(error.response?.data?.message || 'Đăng nhập thất bại');

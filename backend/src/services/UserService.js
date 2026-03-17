@@ -42,11 +42,12 @@ class UserService {
             throw new Error('Mật khẩu không chính xác!');
         }
 
-        const token = jwt.sign(
-            { id: user._id, email: user.email }, 
-            'SECRET_KEY_123', 
-            { expiresIn: '24h' }
-        );
+         // UserService.js
+const token = jwt.sign(
+    { id: user._id, email: user.email }, 
+    process.env.JWT_SECRET, // Dùng biến môi trường cho đồng bộ với Middleware
+    { expiresIn: '24h' }
+);
 
         // Trả về thông tin cần thiết cho Frontend
         return {

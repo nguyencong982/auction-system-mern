@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
 import { createServer } from 'http';
@@ -8,7 +9,6 @@ import connectDB from './db.js';
 import depositRoutes from './routes/depositRoutes.js';
 // --- IMPORT ROUTE RÚT TIỀN ---
 import withdrawalRoutes from './routes/withdrawalRoutes.js'; 
-import 'dotenv/config';
 // Import các Controller
 import UserController from './controllers/UserController.js';
 import ProductController from './controllers/ProductController.js';

@@ -1,0 +1,33 @@
+{
+  "name": "bid-online-project",
+  "version": "1.0.0",
+  "description": "Hệ thống đấu giá trực tuyến - Đồ án tốt nghiệp Thế Công",
+  "main": "index.js",
+  "scripts": {
+    "server": "cd backend && npm run start",
+    "client": "cd frontend && npm run dev",
+    "dev": "concurrently \"npm run server\" \"npm run client\"",
+    "install-all": "npm install && cd backend && npm install && cd ../frontend && npm install",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nguyencong982/auction-system-mern.git"
+  },
+  "keywords": [
+    "mern",
+    "auction",
+    "socket.io",
+    "mongodb-atlas"
+  ],
+  "author": "Thế Công",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/nguyencong982/auction-system-mern/issues"
+  },
+  "homepage": "https://github.com/nguyencong982/auction-system-mern#readme",
+  "devDependencies": {
+    "concurrently": "^9.2.1"
+  }
+}
