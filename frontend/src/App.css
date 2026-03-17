@@ -1,0 +1,88 @@
+#root {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 2rem;
+  text-align: center;
+}
+
+.logo {
+  height: 6em;
+  padding: 1.5em;
+  will-change: filter;
+  transition: filter 300ms;
+}
+
+.logo:hover {
+  filter: drop-shadow(0 0 2em #646cffaa);
+}
+
+.logo.react:hover {
+  filter: drop-shadow(0 0 2em #61dafbaa);
+}
+
+@keyframes logo-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  a:nth-of-type(2) .logo {
+    animation: logo-spin infinite 20s linear;
+  }
+}
+
+.card {
+  padding: 2em;
+}
+
+.read-the-docs {
+  color: #888;
+}
+
+/* =============================================
+   HIỆU ỨNG ĐẤU GIÁ (AUCTION FOMO EFFECTS)
+   ============================================= */
+
+/* 1. Hiệu ứng rung lắc khi sắp hết giờ (dưới 30 giây) */
+@keyframes shake {
+  0% { transform: translate(1px, 1px) rotate(0deg); }
+  10% { transform: translate(-1px, -2px) rotate(-1deg); }
+  20% { transform: translate(-3px, 0px) rotate(1deg); }
+  30% { transform: translate(3px, 2px) rotate(0deg); }
+  40% { transform: translate(1px, -1px) rotate(1deg); }
+  50% { transform: translate(-1px, 2px) rotate(-1deg); }
+  60% { transform: translate(-3px, 1px) rotate(0deg); }
+  70% { transform: translate(3px, 1px) rotate(-1deg); }
+  80% { transform: translate(-1px, -1px) rotate(1deg); }
+  90% { transform: translate(1px, 2px) rotate(0deg); }
+  100% { transform: translate(1px, -2px) rotate(-1deg); }
+}
+
+/* 2. Hiệu ứng nhịp thở (Pulse) để gây chú ý */
+@keyframes pulse-red {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.05); color: #ef4444; } /* Đỏ đậm hơn ở giữa chu kỳ */
+  100% { transform: scale(1); }
+}
+
+/* Class áp dụng hiệu ứng rung */
+.animate-shake {
+  display: inline-block; /* Bắt buộc để transform hoạt động mượt */
+  animation: shake 0.5s infinite linear;
+}
+
+/* Class áp dụng hiệu ứng nhịp đập đỏ */
+.animate-pulse-auction {
+  animation: pulse-red 0.8s infinite ease-in-out;
+}
+
+/* Class hỗ trợ hiển thị đồng hồ chuyên nghiệp */
+.timer-font {
+  font-family: 'Courier New', Courier, monospace; /* Font chữ đơn cách để số không bị nhảy vị trí */
+  font-weight: bold;
+  letter-spacing: 1px;
+}

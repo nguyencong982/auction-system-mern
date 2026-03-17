@@ -1,0 +1,51 @@
+# ==============================================================================
+# 1. BẢO MẬT BIẾN MÔI TRƯỜNG (QUAN TRỌNG NHẤT)
+# ==============================================================================
+# Chặn tất cả các file .env trong bất kỳ thư mục nào
+**/.env
+**/.env.local
+**/.env.development.local
+**/.env.test.local
+**/.env.production.local
+**/.env*.local
+
+# Chặn các file key JSON (Firebase Service Account, Google Cloud)
+**/*.json
+!package.json
+!**/package.json
+!package-lock.json
+!**/package-lock.json
+
+# ==============================================================================
+# 2. DEPENDENCIES & BUILD (DÀNH CHO CẢ 2 BÊN)
+# ==============================================================================
+**/node_modules/
+**/dist/
+**/build/
+**/.next/
+**/.vite/
+
+# ==============================================================================
+# 3. BACKEND SPECIFIC (DÀNH RIÊNG CHO BACKEND)
+# ==============================================================================
+# Chặn các file ảnh bạn upload khi test ở máy local
+backend/uploads/*
+# Giữ lại folder uploads nhưng không đẩy ảnh lên (nếu cần)
+!backend/uploads/.gitkeep
+
+# Logs của server
+backend/logs/
+**/*.log
+
+# ==============================================================================
+# 4. OS & EDITORS (FILE RÁC HỆ THỐNG)
+# ==============================================================================
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
