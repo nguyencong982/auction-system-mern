@@ -9,28 +9,23 @@ class ProductController {
         try {
             const { search, category, minPrice, maxPrice, sort } = req.query;
 
-            // Object truy vấn mặc định
             let query = { status: 'active' };
 
-            // Tìm kiếm theo tên (nếu có)
             if (search) {
                 query.title = { $regex: search, $options: 'i' };
             }
 
-            // Lọc theo danh mục (nếu có và không phải 'Tất cả')
             if (category && category !== 'Tất cả') {
                 query.category = category;
             }
 
-            // Lọc theo khoảng giá (nếu có)
             if (minPrice || maxPrice) {
                 query.currentPrice = {};
                 if (minPrice) query.currentPrice.$gte = Number(minPrice);
                 if (maxPrice) query.currentPrice.$lte = Number(maxPrice);
             }
 
-            // Xử lý sắp xếp
-            let sortOption = { createdAt: -1 }; // Mặc định mới nhất
+            let sortOption = { createdAt: -1 }; 
             if (sort === 'price_asc') sortOption = { currentPrice: 1 };
             if (sort === 'price_desc') sortOption = { currentPrice: -1 };
             if (sort === 'ending_soon') sortOption = { endTime: 1 };
@@ -67,7 +62,7 @@ class ProductController {
         }
     }
 
-    // --- CHỨC NĂNG MỚI: LẤY SẢN PHẨM ĐÃ BÁN THÀNH CÔNG ---
+    // 3. LẤY SẢN PHẨM ĐÃ BÁN THÀNH CÔNG
     getMySoldProducts = async (req, res) => {
         try {
             const sellerId = req.user.id;
@@ -76,7 +71,7 @@ class ProductController {
                 status: 'ended',
                 currentWinner: { $ne: null }
             })
-            .populate('currentWinner', 'fullName email phone address avatar') // Lấy thông tin người thắng
+            .populate('currentWinner', 'fullName email phone address avatar')
             .sort({ endTime: -1 });
 
             res.status(200).json({ success: true, data: soldItems });
@@ -85,7 +80,7 @@ class ProductController {
         }
     }
 
-    // --- CHỨC NĂNG MỚI: KIỂM TRA USER CÓ SẢN PHẨM KHÔNG ĐỂ HIỆN MENU ---
+    // 4. KIỂM TRA USER CÓ SẢN PHẨM KHÔNG ĐỂ HIỆN MENU
     checkUserHasProducts = async (req, res) => {
         try {
             const userId = req.user.id;
@@ -99,7 +94,7 @@ class ProductController {
         }
     }
 
-    // 3. Lấy chi tiết sản phẩm
+    // 5. Lấy chi tiết sản phẩm
     getDetail = async (req, res) => {
         try {
             const { id } = req.params;
@@ -119,7 +114,7 @@ class ProductController {
         }
     }
 
-    // 4. Đăng sản phẩm - ĐÃ SỬA LỖI CATEGORY
+    // 6. ĐĂNG SẢN PHẨM - ĐÃ FIX URL ẢNH ĐỂ CHẠY TRÊN RENDER
     create = async (req, res) => {
         try {
             const ownerId = req.user.id;
@@ -144,8 +139,12 @@ class ProductController {
             const hours = parseInt(durationHours) || 24;
             productData.endTime = new Date(Date.now() + hours * 60 * 60 * 1000);
             
+            // --- FIX URL ẢNH LINH HOẠT THEO DOMAIN ---
             if (req.file) {
-                productData.imageUrl = `http://localhost:5000/uploads/${req.file.filename}`;
+                const protocol = req.protocol;
+                const host = req.get('host');
+                // Kết quả sẽ là https://auction-system-mern-xeyx.onrender.com/uploads/filename.jpg
+                productData.imageUrl = `${protocol}://${host}/uploads/${req.file.filename}`;
             }
             
             const product = await ProductService.createProduct(productData, ownerId);
@@ -171,11 +170,12 @@ class ProductController {
 
             res.status(201).json({ success: true, data: populatedProduct });
         } catch (error) {
+            console.error("🔥 Lỗi Create Product:", error);
             res.status(400).json({ success: false, message: error.message });
         }
     }
 
-    // 5. Cập nhật sản phẩm
+    // 7. Cập nhật sản phẩm
     update = async (req, res) => {
         try {
             const { id } = req.params;
@@ -200,7 +200,7 @@ class ProductController {
         }
     }
 
-    // 6. Xóa sản phẩm
+    // 8. Xóa sản phẩm
     delete = async (req, res) => {
         try {
             const { id } = req.params;
@@ -222,7 +222,7 @@ class ProductController {
         }
     }
 
-    // 7. Đặt giá
+    // 9. Đặt giá
     bid = async (req, res) => {
         try {
             const { productId, bidAmount } = req.body;
@@ -274,7 +274,7 @@ class ProductController {
         }
     }
 
-    // 8. Lấy lịch sử đấu giá của người dùng
+    // 10. Lấy lịch sử đấu giá của người dùng
     getMyBidHistory = async (req, res) => {
         try {
             const userId = req.user.id;
@@ -309,7 +309,7 @@ class ProductController {
         }
     }
 
-    // 9. Lấy lịch sử Chat
+    // 11. Lấy lịch sử Chat
     getChatHistory = async (req, res) => {
         try {
             const { id } = req.params;

@@ -4,19 +4,14 @@ import cors from 'cors';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
 import path from 'path';
+import fs from 'fs'; // Thêm fs để xử lý thư mục
 import { fileURLToPath } from 'url';
 import connectDB from './db.js';
 import depositRoutes from './routes/depositRoutes.js';
-// --- IMPORT ROUTE RÚT TIỀN ---
 import withdrawalRoutes from './routes/withdrawalRoutes.js'; 
-// Import các Controller
 import UserController from './controllers/UserController.js';
 import ProductController from './controllers/ProductController.js';
-
-// Import Model
 import Message from './models/Message.js';
-
-// Import Middleware
 import auth from './middleware/auth.js'; 
 import upload from './middleware/upload.js';
 
@@ -26,21 +21,33 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const httpServer = createServer(app);
 
-// 1. Cấu hình Socket.io
+// --- 1. TỰ ĐỘNG TẠO THƯ MỤC UPLOADS (Fix lỗi 500 khi đăng bán) ---
+const uploadDir = path.join(__dirname, 'uploads');
+if (!fs.existsSync(uploadDir)) {
+    fs.mkdirSync(uploadDir, { recursive: true });
+    console.log("📁 Đã tạo thư mục uploads để lưu ảnh sản phẩm.");
+}
+
+// --- 2. CẤU HÌNH SOCKET.IO (Fix lỗi ERR_CONNECTION_REFUSED) ---
 const io = new Server(httpServer, {
     cors: {
-        origin: "*", 
-        methods: ["GET", "POST"]
-    }
+        origin: ["https://auction-system-mern-psi.vercel.app", "http://localhost:3000"],
+        methods: ["GET", "POST"],
+        credentials: true
+    },
+    transports: ['websocket', 'polling'] // Tăng tính tương thích cho Render
 });
 
 app.set('socketio', io);
 
-// 2. Kết nối Database
+// 3. Kết nối Database
 connectDB();
 
-// 3. Middlewares
-app.use(cors());
+// --- 4. MIDDLEWARES ---
+app.use(cors({
+    origin: ["https://auction-system-mern-psi.vercel.app", "http://localhost:3000"],
+    credentials: true
+}));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -50,9 +57,9 @@ app.use((req, res, next) => {
 });
 
 // PHỤC VỤ FILE TĨNH
-app.use('/uploads', express.static('uploads'));
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-// 4. Socket.io Logic
+// 5. Socket.io Logic
 io.on('connection', (socket) => {
     console.log('⚡ Socket connected:', socket.id);
     
@@ -65,7 +72,6 @@ io.on('connection', (socket) => {
 
     socket.on('joinChat', (productId) => {
         socket.join(`chat_${productId}`);
-        console.log(`💬 User joined chat room: chat_${productId}`);
     });
 
     socket.on('sendMessage', async (data) => {
@@ -83,7 +89,6 @@ io.on('connection', (socket) => {
                 .populate('sender', 'fullName avatar');
 
             io.to(`chat_${productId}`).emit('newMessage', populatedMessage);
-
         } catch (error) {
             console.error("❌ Lỗi Socket Chat:", error);
         }
@@ -96,9 +101,9 @@ io.on('connection', (socket) => {
 
 import './services/AuctionTask.js'; 
 
-// --- HỆ THỐNG ROUTES ---
+// --- 6. HỆ THỐNG ROUTES ---
 
-// A. Routes Xác thực (Auth)
+// A. Routes Xác thực
 app.post('/api/auth/register', UserController.register); 
 app.post('/api/auth/login', UserController.login);
 app.post('/api/auth/reset-password', UserController.resetPassword); 
@@ -125,16 +130,15 @@ app.put('/api/products/:id', auth, ProductController.update);
 app.delete('/api/products/:id', auth, ProductController.delete);
 app.post('/api/products/bid', auth, ProductController.bid);
 
-// D. Hệ thống Tài chính (Nạp/Rút & Thông báo)
+// D. Hệ thống Tài chính
 app.use('/api/deposit', depositRoutes);
-// --- TÍCH HỢP ROUTE RÚT TIỀN TẠI ĐÂY ---
 app.use('/api/withdrawals', withdrawalRoutes); 
 
 app.get('/api/notifications/unread-count', auth, UserController.getUnreadCount);
 app.get('/api/notifications', auth, UserController.getNotifications);
 app.post('/api/user/deposit', auth, UserController.deposit);
 
-// 5. Xử lý lỗi tập trung
+// 7. Xử lý lỗi tập trung
 app.use((err, req, res, next) => {
     console.error("🔥 Lỗi Server:", err.stack);
     res.status(500).json({ 
@@ -144,10 +148,10 @@ app.use((err, req, res, next) => {
     });
 });
 
-// 6. Khởi chạy Server
+// 8. Khởi chạy Server
 const PORT = process.env.PORT || 5000;
 httpServer.listen(PORT, () => {
-    console.log(`🚀 Server real-time chạy tại: http://localhost:${PORT}`);
+    console.log(`🚀 Server đang chạy ổn định trên Port: ${PORT}`);
 });
 
 export { io };
