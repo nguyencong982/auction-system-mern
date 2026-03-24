@@ -69,7 +69,8 @@ const Register = () => {
       setIsOtpSent(true);
       toast.success('Mã OTP đã được gửi!');
     } catch (error) {
-      // ... giữ nguyên phần catch của bạn
+      console.error('🔥 Firebase error:', error);
+      toast.error(error.message);
     } finally {
       setLoading(false);
     }
