@@ -143,25 +143,28 @@ const ProfileHeader = ({ user, isOwnProfile, onUpdateSuccess }) => {
   const getFullImageUrl = (path) => {
     if (!path) return null;
 
-    // Nếu path đã là link chuẩn (Cloudinary/S3/HTTPS) và KHÔNG chứa localhost
+    const serverRoot = 'https://auction-system-mern-xeyx.onrender.com';
+
+    // 1. Nếu là link tuyệt đối (Cloudinary/S3...) và KHÔNG chứa localhost -> Giữ nguyên
     if (path.startsWith('http') && !path.includes('localhost')) {
       return path;
     }
 
-    // Ép buộc dùng server Render
-    const serverRoot = 'https://auction-system-mern-xeyx.onrender.com';
-
-    // Nếu path chứa localhost hoặc bắt đầu bằng /uploads
-    // Chúng ta chỉ lấy phần tên file hoặc phần đường dẫn sau /uploads/
+    // 2. Xử lý logic làm sạch path
     let cleanPath = path;
+
+    // Nếu chứa localhost:5000, ta cắt lấy phần đuôi từ sau /uploads/ hoặc sau cổng 5000
     if (path.includes('localhost')) {
-      // Tách lấy phần sau cổng 5000 (ví dụ: /uploads/abc.png)
       const parts = path.split(':5000');
       cleanPath = parts.length > 1 ? parts[1] : path.split('/').pop();
     }
 
-    // Đảm bảo cleanPath bắt đầu bằng dấu /
-    if (typeof cleanPath === 'string' && !cleanPath.startsWith('/')) {
+    // Đảm bảo không bị lặp "/uploads/uploads/"
+    // Nếu cleanPath chưa có uploads, ta thêm vào (tùy thuộc vào cấu trúc server Render của bạn)
+    // Nhưng thường Render sẽ serve static folder là /uploads
+
+    // Chuẩn hóa dấu gạch chéo đầu dòng
+    if (!cleanPath.startsWith('/')) {
       cleanPath = '/' + cleanPath;
     }
 
