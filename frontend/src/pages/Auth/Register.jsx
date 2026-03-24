@@ -25,7 +25,8 @@ const Register = () => {
   useEffect(() => {
     if (!window.recaptchaVerifier) {
       window.recaptchaVerifier = new RecaptchaVerifier(
-        'recaptcha-container', // ✅ ĐÚNG
+        auth, // ✅ auth đứng đầu
+        'recaptcha-container',
         {
           size: 'invisible',
           callback: () => {
@@ -34,8 +35,7 @@ const Register = () => {
           'expired-callback': () => {
             toast.warning('Phiên làm việc hết hạn, vui lòng thử lại.');
           },
-        },
-        auth // ✅ ĐÚNG
+        }
       );
     }
   }, []);
