@@ -53,9 +53,13 @@ const ProductDetail = () => {
 
   const getFullImageUrl = (path) => {
     if (!path) return null;
+
+    // Nếu path đã là link full (Cloudinary, Google, v.v.) thì trả về luôn
     if (path.startsWith('http')) return path;
+
+    // Nếu là đường dẫn cũ (Local), mới cần ghép BASE_URL
     const cleanPath = path.startsWith('/') ? path.substring(1) : path;
-    return `${BASE_URL}/${cleanPath}?t=${new Date().getTime()}`;
+    return `${BASE_URL}/${cleanPath}`;
   };
 
   const scrollToBottom = () => {
@@ -241,7 +245,7 @@ const ProductDetail = () => {
         <div className="mx-auto mb-12 flex max-w-6xl flex-col overflow-hidden rounded-[50px] border border-gray-100 bg-white shadow-sm lg:flex-row">
           <div className="relative h-[600px] bg-gray-100 lg:w-1/2">
             <img
-              src={product.imageUrl}
+              src={product.image || product.imageUrl} // Dùng field 'image' mới, fallback về 'imageUrl' cũ nếu cần
               alt={product.title}
               className="h-full w-full object-cover"
             />
