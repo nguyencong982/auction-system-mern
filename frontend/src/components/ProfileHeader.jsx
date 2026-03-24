@@ -143,17 +143,25 @@ const ProfileHeader = ({ user, isOwnProfile, onUpdateSuccess }) => {
     aspectRatio: 1,
   });
 
+  // Sửa lại hàm này trong ProfileHeader.js
   const getFullImageUrl = (path) => {
     if (!path) return null;
 
-    // Nếu path đã là link tuyệt đối (Cloudinary trả về link bắt đầu bằng http)
+    // 1. Nếu đã là link tuyệt đối (Cloudinary trả về link có http) -> Trả về luôn
     if (path.startsWith('http')) {
       return path;
     }
 
-    // Nếu là ảnh cũ lưu ở folder uploads trên server Render
-    const cleanPath = path.startsWith('/') ? path.substring(1) : path;
-    return `${BASE_URL}/uploads/${cleanPath}`;
+    // 2. Nếu là path lưu trong DB (ví dụ: /auction_products/avatar-...)
+    // Kiểm tra xem biến môi trường có VITE_ không (Vercel yêu cầu tiền tố VITE_)
+    const serverUrl =
+      import.meta.env.VITE_API_URL || 'https://auction-system-mern-xeyx.onrender.com';
+
+    // Loại bỏ chữ /api ở cuối nếu có để lấy link gốc server
+    const cleanServerUrl = serverUrl.replace(/\/api$/, '').replace(/\/$/, '');
+    const cleanPath = path.startsWith('/') ? path : `/${path}`;
+
+    return `${cleanServerUrl}${cleanPath}`;
   };
 
   const handleFileChange = (e, type) => {
