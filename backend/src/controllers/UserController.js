@@ -5,20 +5,23 @@ import Product from '../models/Product.js';
 
 class UserController {
     // 1. Đăng ký tài khoản
-    register = async (req, res) => {
-        try {
-            // Tích hợp kiểm tra bắt buộc số điện thoại từ request body
-            const { phone } = req.body;
-            if (!phone) {
-                return res.status(400).json({ success: false, message: "Vui lòng nhập số điện thoại" });
-            }
+    // UserController.js - Sửa lại dòng lấy dữ liệu
+register = async (req, res) => {
+    try {
+        // Nhận cả phone hoặc phoneNumber từ body
+        const phone = req.body.phone || req.body.phoneNumber; 
 
-            const user = await UserService.registerAccount(req.body);
-            res.status(201).json({ success: true, data: user });
-        } catch (error) {
-            res.status(400).json({ success: false, message: error.message });
+        if (!phone) {
+            return res.status(400).json({ success: false, message: "Vui lòng nhập số điện thoại" });
         }
+
+        // Đảm bảo truyền đủ dữ liệu vào Service bao gồm cả phone đã chuẩn hóa
+        const user = await UserService.registerAccount({ ...req.body, phone });
+        res.status(201).json({ success: true, data: user });
+    } catch (error) {
+        res.status(400).json({ success: false, message: error.message });
     }
+}
 
     // 2. Đăng nhập
     login = async (req, res) => {

@@ -4,7 +4,7 @@ import { toast, ToastContainer } from 'react-toastify';
 import { RecaptchaVerifier, signInWithPhoneNumber } from 'firebase/auth';
 import { auth } from '../../firebase'; // Đảm bảo đường dẫn này đúng
 import API from '../../api';
-
+import firebase from '../../firebase';
 const Register = () => {
   const [formData, setFormData] = useState({
     fullName: '',
@@ -87,19 +87,41 @@ const Register = () => {
       // 1. Xác thực mã OTP với Firebase
       await confirmationResult.confirm(otp);
 
-      // 2. Nếu thành công, gửi dữ liệu về Backend của bạn
-      const res = await API.post('/auth/register', formData);
+      // 2. Chuẩn hóa số điện thoại một lần nữa để gửi về Backend
+      // (Đảm bảo Backend nhận được số y hệt số đã xác thực với Firebase)
+      let finalPhone = formData.phone;
+      if (finalPhone.startsWith('0')) {
+        finalPhone = `+84${finalPhone.slice(1)}`;
+      } else if (finalPhone.startsWith('84') && !finalPhone.startsWith('+')) {
+        finalPhone = `+${finalPhone}`;
+      }
+
+      // Tạo object dữ liệu mới để gửi về Backend
+      const dataToSend = {
+        ...formData,
+        phone: finalPhone, // Gửi số đã chuẩn hóa +84
+      };
+
+      console.log('Dữ liệu gửi về Backend:', dataToSend);
+
+      // 3. Gửi dữ liệu về Backend
+      const res = await API.post('/auth/register', dataToSend);
 
       if (res.data?.success || res.status === 200 || res.status === 201) {
         toast.success('Đăng ký thành công!');
         setTimeout(() => navigate('/login'), 2000);
       }
     } catch (error) {
-      console.error(error);
+      console.error('Chi tiết lỗi:', error);
+
+      // Đọc thông báo lỗi từ Backend trả về để biết lý do chính xác (400 là do cái gì)
+      const serverMessage = error.response?.data?.message;
+
       toast.error(
-        error.code === 'auth/invalid-verification-code'
-          ? 'Mã OTP không chính xác'
-          : 'Đăng ký thất bại. Vui lòng kiểm tra lại thông tin.'
+        serverMessage ||
+          (error.code === 'auth/invalid-verification-code'
+            ? 'Mã OTP không chính xác'
+            : 'Đăng ký thất bại')
       );
     } finally {
       setLoading(false);
