@@ -139,29 +139,28 @@ const ProfileHeader = ({ user, isOwnProfile, onUpdateSuccess }) => {
   });
 
   // --- HÀM ĐÃ ĐƯỢC CẬP NHẬT ĐỂ CHẶN LOCALHOST ---
+  // --- HÀM ĐÃ ĐƯỢC TỐI ƯU HÓA ---
   const getFullImageUrl = (path) => {
     if (!path) return null;
 
-    // 1. Xử lý nếu path chứa localhost (lỗi do dữ liệu cũ trong DB)
-    if (path.includes('localhost')) {
-      // Tách lấy tên file cuối cùng (ví dụ: avatar-123.png)
-      const parts = path.split('/');
-      const fileName = parts[parts.length - 1];
-      // Ép về link server Render
-      return `${BASE_URL}/uploads/${fileName}`;
-    }
-
-    // 2. Nếu đã là link tuyệt đối chuẩn (Cloudinary hoặc link https khác)
-    if (path.startsWith('http')) {
+    // 1. Nếu đã là link Cloudinary hoặc link web chuẩn (không phải localhost)
+    if (path.startsWith('http') && !path.includes('localhost')) {
       return path;
     }
 
-    // 3. Nếu là path tương đối lưu trong DB
-    const serverUrl = import.meta.env.VITE_API_URL || BASE_URL;
-    const cleanServerUrl = serverUrl.replace(/\/api$/, '').replace(/\/$/, '');
-    const cleanPath = path.startsWith('/') ? path : `/${path}`;
+    // 2. Xác định Server Root (Bỏ /api nếu có)
+    const rawUrl = import.meta.env.VITE_API_URL || 'https://auction-system-mern-xeyx.onrender.com';
+    const serverRoot = rawUrl.replace(/\/api$/, '').replace(/\/$/, '');
 
-    return `${cleanServerUrl}${cleanPath}`;
+    // 3. Nếu path chứa localhost (dữ liệu cũ)
+    if (path.includes('localhost')) {
+      const fileName = path.split('/').pop();
+      return `${serverRoot}/uploads/${fileName}`;
+    }
+
+    // 4. Nếu là path tương đối (/uploads/...)
+    const cleanPath = path.startsWith('/') ? path : `/${path}`;
+    return `${serverRoot}${cleanPath}`;
   };
 
   const handleFileChange = (e, type) => {
