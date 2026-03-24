@@ -24,15 +24,19 @@ const Register = () => {
   // Khởi tạo reCAPTCHA ngay khi component mount để tránh lỗi render
   useEffect(() => {
     if (!window.recaptchaVerifier) {
-      window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
-        size: 'invisible',
-        callback: (response) => {
-          console.log('Recaptcha verified');
+      window.recaptchaVerifier = new RecaptchaVerifier(
+        'recaptcha-container', // ✅ ĐÚNG
+        {
+          size: 'invisible',
+          callback: () => {
+            console.log('Recaptcha verified');
+          },
+          'expired-callback': () => {
+            toast.warning('Phiên làm việc hết hạn, vui lòng thử lại.');
+          },
         },
-        'expired-callback': () => {
-          toast.warning('Phiên làm việc hết hạn, vui lòng thử lại.');
-        },
-      });
+        auth // ✅ ĐÚNG
+      );
     }
   }, []);
 
