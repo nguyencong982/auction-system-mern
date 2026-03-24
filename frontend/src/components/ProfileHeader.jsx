@@ -3,8 +3,7 @@ import API from '../api';
 import { toast } from 'react-toastify';
 import Cropper from 'react-easy-crop';
 
-// Thay đổi dòng này ở đầu file
-const BASE_URL = 'https://auction-system-mern-xeyx.onrender.com'; // Link Render của bạn
+const BASE_URL = 'https://auction-system-mern-xeyx.onrender.com';
 const FALLBACK_AVATAR = 'https://ui-avatars.com/api/?background=random&color=fff&name=User';
 const FALLBACK_COVER = 'https://images.unsplash.com/photo-1557683316-973673baf926?q=80&w=1000';
 
@@ -13,12 +12,8 @@ const ImageCropperModal = ({ imageSrc, cropShape, aspectRatio, onCropComplete, o
   const [zoom, setZoom] = useState(1);
   const [croppedAreaPixels, setCroppedAreaPixels] = useState(null);
 
-  const onCropChange = (crop) => {
-    setCrop(crop);
-  };
-  const onZoomChange = (zoom) => {
-    setZoom(zoom);
-  };
+  const onCropChange = (crop) => setCrop(crop);
+  const onZoomChange = (zoom) => setZoom(zoom);
 
   const onCropCompleteInternal = useCallback((croppedArea, croppedAreaPixels) => {
     setCroppedAreaPixels(croppedAreaPixels);
@@ -143,21 +138,26 @@ const ProfileHeader = ({ user, isOwnProfile, onUpdateSuccess }) => {
     aspectRatio: 1,
   });
 
-  // Sửa lại hàm này trong ProfileHeader.js
+  // --- HÀM ĐÃ ĐƯỢC CẬP NHẬT ĐỂ CHẶN LOCALHOST ---
   const getFullImageUrl = (path) => {
     if (!path) return null;
 
-    // 1. Nếu đã là link tuyệt đối (Cloudinary trả về link có http) -> Trả về luôn
+    // 1. Xử lý nếu path chứa localhost (lỗi do dữ liệu cũ trong DB)
+    if (path.includes('localhost')) {
+      // Tách lấy tên file cuối cùng (ví dụ: avatar-123.png)
+      const parts = path.split('/');
+      const fileName = parts[parts.length - 1];
+      // Ép về link server Render
+      return `${BASE_URL}/uploads/${fileName}`;
+    }
+
+    // 2. Nếu đã là link tuyệt đối chuẩn (Cloudinary hoặc link https khác)
     if (path.startsWith('http')) {
       return path;
     }
 
-    // 2. Nếu là path lưu trong DB (ví dụ: /auction_products/avatar-...)
-    // Kiểm tra xem biến môi trường có VITE_ không (Vercel yêu cầu tiền tố VITE_)
-    const serverUrl =
-      import.meta.env.VITE_API_URL || 'https://auction-system-mern-xeyx.onrender.com';
-
-    // Loại bỏ chữ /api ở cuối nếu có để lấy link gốc server
+    // 3. Nếu là path tương đối lưu trong DB
+    const serverUrl = import.meta.env.VITE_API_URL || BASE_URL;
     const cleanServerUrl = serverUrl.replace(/\/api$/, '').replace(/\/$/, '');
     const cleanPath = path.startsWith('/') ? path : `/${path}`;
 
@@ -278,7 +278,6 @@ const ProfileHeader = ({ user, isOwnProfile, onUpdateSuccess }) => {
 
           {isOwnProfile && (
             <label className="absolute right-2 bottom-2 flex cursor-pointer items-center justify-center rounded-2xl border-2 border-white bg-blue-600 p-3 text-white shadow-lg transition-all hover:scale-110 active:scale-95">
-              {/* SỬA LỖI ICON CAMERA TẠI ĐÂY - Dùng SVG Path chuẩn không bị rotate */}
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 width="20"
@@ -316,7 +315,6 @@ const ProfileHeader = ({ user, isOwnProfile, onUpdateSuccess }) => {
           <div className="mt-1 flex items-center gap-4">
             <p className="font-bold text-gray-500">{user.email}</p>
             <span className="text-gray-300">|</span>
-            {/* THÊM CHỨC NĂNG SỐ LƯỢNG NGƯỜI THEO DÕI */}
             <div className="flex gap-4">
               <span className="cursor-default">
                 <b className="text-gray-800">{user.followers?.length || 0}</b>

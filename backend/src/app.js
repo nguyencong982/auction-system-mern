@@ -4,7 +4,7 @@ import cors from 'cors';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
 import path from 'path';
-import fs from 'fs'; // Thêm fs để xử lý thư mục
+import fs from 'fs'; 
 import { fileURLToPath } from 'url';
 import connectDB from './db.js';
 import depositRoutes from './routes/depositRoutes.js';
@@ -21,21 +21,20 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const httpServer = createServer(app);
 
-// --- 1. TỰ ĐỘNG TẠO THƯ MỤC UPLOADS (Fix lỗi 500 khi đăng bán) ---
+// --- 1. TỰ ĐỘNG TẠO THƯ MỤC UPLOADS (Tránh lỗi 500 khi upload đệm) ---
 const uploadDir = path.join(__dirname, 'uploads');
 if (!fs.existsSync(uploadDir)) {
     fs.mkdirSync(uploadDir, { recursive: true });
-    console.log("📁 Đã tạo thư mục uploads để lưu ảnh sản phẩm.");
 }
 
-// --- 2. CẤU HÌNH SOCKET.IO (Fix lỗi ERR_CONNECTION_REFUSED) ---
+// --- 2. CẤU HÌNH SOCKET.IO ---
 const io = new Server(httpServer, {
     cors: {
         origin: ["https://auction-system-mern-psi.vercel.app", "http://localhost:3000"],
         methods: ["GET", "POST"],
         credentials: true
     },
-    transports: ['websocket', 'polling'] // Tăng tính tương thích cho Render
+    transports: ['websocket', 'polling']
 });
 
 app.set('socketio', io);
@@ -51,13 +50,14 @@ app.use(cors({
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// CẤU HÌNH STATIC FOLDER (Quan trọng để xem được các ảnh local cũ nếu có)
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+app.use('/auction_products', express.static(path.join(__dirname, 'auction_products')));
+
 app.use((req, res, next) => {
     req.io = io; 
     next();
 });
-
-// PHỤC VỤ FILE TĨNH
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // 5. Socket.io Logic
 io.on('connection', (socket) => {
@@ -101,7 +101,7 @@ io.on('connection', (socket) => {
 
 import './services/AuctionTask.js'; 
 
-// --- 6. HỆ THỐNG ROUTES ---
+// --- 6. HỆ THỐNG ROUTES (GIỮ NGUYÊN) ---
 
 // A. Routes Xác thực
 app.post('/api/auth/register', UserController.register); 

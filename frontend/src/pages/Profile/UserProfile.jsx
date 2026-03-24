@@ -3,7 +3,6 @@ import { useParams, useNavigate } from 'react-router-dom';
 import API from '../../api';
 import { toast, ToastContainer } from 'react-toastify';
 import ProfileHeader from '../../components/ProfileHeader';
-// Chỉ sử dụng duy nhất instance này
 import socket from '../../socket';
 
 const UserProfile = () => {
@@ -14,6 +13,19 @@ const UserProfile = () => {
   const [isFollowing, setIsFollowing] = useState(false);
   const [isFollowLoading, setIsFollowLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('Sản phẩm');
+
+  const BASE_URL = 'https://auction-system-mern-xeyx.onrender.com';
+
+  // --- HÀM XỬ LÝ ẢNH TRONG USER PROFILE ---
+  const getFullImageUrl = (path) => {
+    if (!path) return null;
+    if (path.includes('localhost')) {
+      return `${BASE_URL}/uploads/${path.split('/').pop()}`;
+    }
+    if (path.startsWith('http')) return path;
+    const cleanPath = path.startsWith('/') ? path : `/${path}`;
+    return `${BASE_URL}${cleanPath}`;
+  };
 
   const getLocalUser = () => {
     const data = localStorage.getItem('user');
@@ -32,9 +44,7 @@ const UserProfile = () => {
   // QUẢN LÝ SOCKET
   useEffect(() => {
     if (!id) return;
-
     const eventName = `update_followers_${id}`;
-
     socket.on(eventName, (data) => {
       setProfileData((prev) => {
         if (!prev) return prev;
@@ -47,10 +57,7 @@ const UserProfile = () => {
         };
       });
     });
-
-    return () => {
-      socket.off(eventName);
-    };
+    return () => socket.off(eventName);
   }, [id]);
 
   // FETCH DỮ LIỆU PROFILE
@@ -76,7 +83,6 @@ const UserProfile = () => {
         setLoading(false);
       }
     };
-
     if (id) fetchProfile();
   }, [id, currentUserId]);
 
@@ -96,20 +102,16 @@ const UserProfile = () => {
       e.preventDefault();
       e.stopPropagation();
     }
-
     const latestUser = getLocalUser();
     const latestUserId = latestUser?._id || latestUser?.id;
-
     if (!latestUser || !latestUserId) {
       toast.warning('Vui lòng đăng nhập để theo dõi');
       return;
     }
-
     if (latestUserId.toString() === id?.toString()) {
       toast.info('Bạn không thể theo dõi chính mình');
       return;
     }
-
     if (isFollowLoading) return;
 
     const previousFollowStatus = isFollowing;
@@ -124,17 +126,13 @@ const UserProfile = () => {
         : currentFollowers.filter(
             (f) => (f._id?.toString() || f.toString()) !== latestUserId.toString()
           );
-
       return { ...prev, profile: { ...prev.profile, followers: updatedFollowers } };
     });
 
     setIsFollowLoading(true);
-
     try {
       const res = await API.post(`/users/follow/${id}`);
-      if (res.data.isFollowing !== undefined) {
-        setIsFollowing(res.data.isFollowing);
-      }
+      if (res.data.isFollowing !== undefined) setIsFollowing(res.data.isFollowing);
       toast.success(res.data.message);
     } catch (error) {
       setIsFollowing(previousFollowStatus);
@@ -148,14 +146,12 @@ const UserProfile = () => {
     }
   };
 
-  if (loading) {
+  if (loading)
     return (
       <div className="flex min-h-screen items-center justify-center">
         <div className="h-12 w-12 animate-spin rounded-full border-t-2 border-b-2 border-blue-500"></div>
       </div>
     );
-  }
-
   if (!profileData)
     return <div className="py-20 text-center font-bold">Người dùng không tồn tại.</div>;
 
@@ -171,6 +167,7 @@ const UserProfile = () => {
             isOwnProfile={isMyProfile}
             onUpdateSuccess={handleUpdateImageSuccess}
           />
+
           <div className="relative z-[40] -mt-6 flex flex-col items-center justify-end gap-4 px-6 pb-4 md:-mt-12 md:flex-row">
             <div className="flex w-full gap-2 md:w-auto">
               {isMyProfile ? (
@@ -197,6 +194,7 @@ const UserProfile = () => {
               )}
             </div>
           </div>
+
           <div className="no-scrollbar relative z-10 mt-4 flex gap-8 overflow-x-auto border-t px-4 font-bold text-gray-500">
             {['Sản phẩm', 'Giới thiệu', 'Người theo dõi'].map((tab) => (
               <button
@@ -247,14 +245,22 @@ const UserProfile = () => {
                     key={product._id}
                     className="overflow-hidden rounded-xl border border-gray-200 bg-white transition-all hover:shadow-md"
                   >
-                    <img src={product.imageUrl} className="h-48 w-full object-cover" alt="" />
+                    {/* SỬA TẠI ĐÂY: Dùng getFullImageUrl cho ảnh sản phẩm */}
+                    <img
+                      src={getFullImageUrl(product.imageUrl || product.image)}
+                      className="h-48 w-full object-cover"
+                      alt={product.title}
+                    />
                     <div className="p-4">
                       <h3 className="truncate font-black text-gray-800">{product.title}</h3>
                       <div className="mt-4 flex items-center justify-between">
                         <p className="font-black text-blue-600">
                           {Number(product.currentPrice).toLocaleString()}đ
                         </p>
-                        <button className="rounded-lg bg-gray-900 px-3 py-1.5 text-[11px] font-bold text-white transition-all hover:bg-blue-600">
+                        <button
+                          onClick={() => navigate(`/product/${product._id}`)}
+                          className="rounded-lg bg-gray-900 px-3 py-1.5 text-[11px] font-bold text-white transition-all hover:bg-blue-600"
+                        >
                           Đấu giá
                         </button>
                       </div>
@@ -275,11 +281,21 @@ const UserProfile = () => {
                 profile.followers.map((f, i) => (
                   <div
                     key={i}
-                    className="flex items-center gap-3 rounded-lg border p-3 hover:bg-gray-50"
+                    className="flex cursor-pointer items-center gap-3 rounded-lg border p-3 hover:bg-gray-50"
+                    onClick={() => navigate(`/user/${f._id}`)}
                   >
-                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-100 font-bold text-blue-600">
-                      {(f.fullName || f.username || 'U').charAt(0).toUpperCase()}
-                    </div>
+                    {/* SỬA TẠI ĐÂY: Dùng getFullImageUrl cho avatar người theo dõi */}
+                    {f.avatar ? (
+                      <img
+                        src={getFullImageUrl(f.avatar)}
+                        className="h-10 w-10 rounded-full object-cover"
+                        alt=""
+                      />
+                    ) : (
+                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-100 font-bold text-blue-600">
+                        {(f.fullName || f.username || 'U').charAt(0).toUpperCase()}
+                      </div>
+                    )}
                     <span className="text-sm font-bold text-gray-800">
                       {f.fullName || f.username || 'Người dùng'}
                     </span>
