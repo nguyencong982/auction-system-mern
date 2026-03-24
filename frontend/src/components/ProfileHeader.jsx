@@ -143,22 +143,22 @@ const ProfileHeader = ({ user, isOwnProfile, onUpdateSuccess }) => {
   const getFullImageUrl = (path) => {
     if (!path) return null;
 
-    // 1. Nếu đã là link Cloudinary hoặc link web chuẩn (không phải localhost)
+    // 1. Link đã chuẩn (Cloudinary/HTTPS) thì giữ nguyên
     if (path.startsWith('http') && !path.includes('localhost')) {
       return path;
     }
 
-    // 2. Xác định Server Root (Bỏ /api nếu có)
-    const rawUrl = import.meta.env.VITE_API_URL || 'https://auction-system-mern-xeyx.onrender.com';
-    const serverRoot = rawUrl.replace(/\/api$/, '').replace(/\/$/, '');
+    // 2. Ép link về server Render (Không dùng biến env nếu env đang lỗi)
+    const serverRoot = 'https://auction-system-mern-xeyx.onrender.com';
 
-    // 3. Nếu path chứa localhost (dữ liệu cũ)
+    // 3. Nếu dính localhost, lấy tên file và nối lại với server thật
     if (path.includes('localhost')) {
-      const fileName = path.split('/').pop();
+      const parts = path.split('/');
+      const fileName = parts[parts.length - 1];
       return `${serverRoot}/uploads/${fileName}`;
     }
 
-    // 4. Nếu là path tương đối (/uploads/...)
+    // 4. Các trường hợp khác
     const cleanPath = path.startsWith('/') ? path : `/${path}`;
     return `${serverRoot}${cleanPath}`;
   };
