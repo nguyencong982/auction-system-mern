@@ -1,24 +1,26 @@
 import Product from '../models/Product.js';
 import User from '../models/User.js'; 
-import { io } from '../app.js'; 
 import NotificationService from './NotificationService.js';
 
 class ProductService {
     /**
-     * 1. Logic Đăng sản phẩm mới (Tự động nhận category qua productData)
+     * 1. Logic Đăng sản phẩm mới
      */
     async createProduct(productData, ownerId) {
         const newProduct = new Product({
-            ...productData, // Trường category từ controller truyền vào đã được gán trực tiếp ở bước trước
-            owner: ownerId
+            ...productData,
+            owner: ownerId,
+            // Đảm bảo giá hiện tại bắt đầu từ giá khởi điểm
+            currentPrice: productData.initialPrice 
         });
         return await newProduct.save();
     }
 
     /**
-     * 2. Logic Đặt giá (Bidding) - GIỮ NGUYÊN LOGIC HOÀN TIỀN & LỊCH SỬ
+     * 2. Logic Đặt giá (Bidding)
      */
     async placeBid(productId, userId, bidAmount) {
+        // Sử dụng session nếu bạn muốn an toàn tuyệt đối về tiền tệ (Transactions)
         const product = await Product.findById(productId);
         if (!product) throw new Error("Sản phẩm không tồn tại!");
 
@@ -27,24 +29,24 @@ class ProductService {
 
         // 1. KIỂM TRA SỐ DƯ
         if (user.balance < bidAmount) {
-            throw new Error(`Số dư không đủ! Bạn cần ${bidAmount.toLocaleString()} VNĐ`);
+            throw new Error(`Số dư không đủ! Bạn cần ít nhất ${bidAmount.toLocaleString()} VNĐ trong ví.`);
         }
 
         // 2. KIỂM TRA ĐIỀU KIỆN ĐẤU GIÁ
-        if (new Date() > product.endTime || product.status !== 'active') {
-            throw new Error("Phiên đấu giá đã kết thúc!");
+        if (new Date() > new Date(product.endTime) || product.status !== 'active') {
+            throw new Error("Phiên đấu giá đã kết thúc hoặc không còn hoạt động!");
         }
         
-        const minimumBid = product.currentPrice + product.stepPrice;
+        const minimumBid = product.currentPrice + (product.stepPrice || 0);
         if (bidAmount < minimumBid) {
-            throw new Error(`Giá thấp nhất có thể đặt là ${minimumBid.toLocaleString()} VNĐ`);
+            throw new Error(`Giá đặt phải lớn hơn hoặc bằng ${minimumBid.toLocaleString()} VNĐ`);
         }
 
         const oldWinnerId = product.currentWinner;
         const oldPrice = product.currentPrice;
 
-        // A. HOÀN TIỀN CHO NGƯỜI CŨ
-        if (oldWinnerId) {
+        // A. HOÀN TIỀN CHO NGƯỜI CŨ (Nếu có)
+        if (oldWinnerId && oldWinnerId.toString() !== userId.toString()) {
             const oldWinner = await User.findById(oldWinnerId);
             if (oldWinner) {
                 oldWinner.balance += oldPrice;
@@ -63,30 +65,18 @@ class ProductService {
         user.balance -= bidAmount;
         await user.save();
 
-        // C. CẬP NHẬT TRẠNG THÁI SẢN PHẨM & LỊCH SỬ
+        // C. CẬP NHẬT SẢN PHẨM
         product.currentPrice = bidAmount;
         product.currentWinner = userId;
-
-        // --- THÊM LOGIC LƯU LỊCH SỬ TẠI ĐÂY ---
         product.bidHistory.push({
             bidder: userId,
-            bidderName: user.fullName,
             amount: bidAmount,
             time: new Date()
         });
-        // --------------------------------------
 
         await product.save();
-
-        // Phát tín hiệu Real-time
-        io.emit('bidUpdated', {
-            productId: product._id,
-            newPrice: product.currentPrice,
-            winnerName: user.fullName,
-            userBalance: user.balance,
-            bidHistory: product.bidHistory // Gửi kèm lịch sử mới nhất
-        });
-
+        
+        // Trả về product đã cập nhật để Controller xử lý Socket IO
         return product;
     }
 }

@@ -26,28 +26,35 @@ const CreateProduct = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    // Kiểm tra nhanh trước khi gửi
+    if (!file) {
+      return alert('Vui lòng chọn một tấm ảnh thật đẹp cho sản phẩm!');
+    }
+
     try {
-      // Vì có gửi File nên phải dùng FormData thay vì JSON
       const data = new FormData();
       data.append('title', formData.title);
       data.append('description', formData.description);
       data.append('initialPrice', formData.initialPrice);
       data.append('stepPrice', formData.stepPrice);
+      data.append('category', formData.category);
+
+      // Tính toán durationHours từ endTime nếu Backend của bạn dùng durationHours
+      // Hoặc nếu bạn đã sửa Backend nhận endTime thì giữ nguyên line dưới:
       data.append('endTime', formData.endTime);
-      data.append('category', formData.category); // TÍCH HỢP TRƯỜNG MỚI
 
-      if (file) {
-        data.append('image', file); // 'image' phải khớp với upload.single('image') ở Backend
-      }
+      // KEY NÀY PHẢI KHỚP: upload.single('image') ở Backend
+      data.append('image', file);
 
-      await API.post('/products', data, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      });
+      // KHUYÊN DÙNG: Để Axios tự xử lý Header cho FormData
+      await API.post('/products', data);
 
-      alert('Đăng sản phẩm thành công!');
+      alert('🚀 Đăng sản phẩm thành công!');
       navigate('/');
     } catch (error) {
-      alert(error.response?.data?.message || 'Lỗi khi đăng sản phẩm');
+      console.error('Lỗi khi đăng sản phẩm:', error.response?.data);
+      alert(error.response?.data?.message || 'Lỗi server (500) hoặc lỗi đường truyền');
     }
   };
 

@@ -8,7 +8,6 @@ class ProductController {
     getAllActive = async (req, res) => {
         try {
             const { search, category, minPrice, maxPrice, sort } = req.query;
-
             let query = { status: 'active' };
 
             if (search) {
@@ -117,61 +116,62 @@ class ProductController {
     // 6. ĐĂNG SẢN PHẨM - ĐÃ FIX URL ẢNH ĐỂ CHẠY TRÊN RENDER
     // 6. ĐĂNG SẢN PHẨM - TÍCH HỢP CLOUDINARY
 create = async (req, res) => {
-    try {
-        const ownerId = req.user.id;
-        
-        const { 
-            title, 
-            description, 
-            initialPrice, 
-            stepPrice, 
-            category, 
-            durationHours 
-        } = req.body; 
-        
-        // Kiểm tra xem có file ảnh không
-        if (!req.file) {
-            return res.status(400).json({ success: false, message: "Vui lòng upload ảnh sản phẩm!" });
-        }
+        try {
+            const ownerId = req.user.id;
+            const { 
+                title, 
+                description, 
+                initialPrice, 
+                stepPrice, 
+                category, 
+                durationHours 
+            } = req.body; 
+            
+            if (!req.file) {
+                return res.status(400).json({ success: false, message: "Vui lòng upload ảnh sản phẩm!" });
+            }
 
-        const productData = { 
-            title,
-            description,
-            initialPrice: Number(initialPrice),
-            stepPrice: Number(stepPrice),
-            category: category,
-            // Lấy URL trực tiếp từ Cloudinary mà Multer đã trả về
-            image: req.file.path 
-        };
+            // ĐÂY LÀ ĐOẠN QUAN TRỌNG NHẤT: Đổi 'image' thành 'imageUrl'
+            const productData = { 
+                title,
+                description,
+                initialPrice: Number(initialPrice),
+                stepPrice: Number(stepPrice),
+                category: category,
+                imageUrl: req.file.path // Cloudinary trả về link nằm trong req.file.path
+            };
 
-        const hours = parseInt(durationHours) || 24;
-        productData.endTime = new Date(Date.now() + hours * 60 * 60 * 1000);
-        
-        // Gọi Service để lưu vào Database
-        const product = await ProductService.createProduct(productData, ownerId);
-        
-        // Lấy thông tin đầy đủ để gửi qua Socket
-        const populatedProduct = await Product.findById(product._id)
-            .populate('owner', 'fullName _id avatar');
+            const hours = parseInt(durationHours) || 24;
+            productData.endTime = new Date(Date.now() + hours * 60 * 60 * 1000);
+            
+            const product = await ProductService.createProduct(productData, ownerId);
+            
+            const populatedProduct = await Product.findById(product._id)
+                .populate('owner', 'fullName _id avatar');
 
-        const io = req.app.get('socketio');
+            const io = req.app.get('socketio');
+            if (io) io.emit('newProduct', populatedProduct);
 
-        // Thông báo Real-time cho mọi người
-        if (io) io.emit('newProduct', populatedProduct);
-
-        // Thông báo cho những người đang theo dõi chủ sở hữu
-        const owner = await User.findById(ownerId).populate('followers');
-        if (owner && owner.followers.length > 0) {
-            owner.followers.forEach(follower => {
-                if (io) io.to(follower._id.toString()).emit('newFollowerProduct', {
-                    message: `🌟 ${owner.fullName} vừa đăng bán sản phẩm mới: ${product.title}`,
-                    productId: product._id,
-                    ownerName: owner.fullName,
-                    ownerId: owner._id,
-                    ownerAvatar: owner.avatar 
+            // Thông báo cho followers
+            const owner = await User.findById(ownerId).populate('followers');
+            if (owner && owner.followers.length > 0) {
+                owner.followers.forEach(follower => {
+                    if (io) io.to(follower._id.toString()).emit('newFollowerProduct', {
+                        message: `🌟 ${owner.fullName} vừa đăng bán sản phẩm mới: ${product.title}`,
+                        productId: product._id,
+                        ownerName: owner.fullName,
+                        ownerId: owner._id,
+                        ownerAvatar: owner.avatar 
+                    });
                 });
-            });
+            }
+
+            res.status(201).json({ success: true, data: populatedProduct });
+        } catch (error) {
+            console.error("🔥 Lỗi Create Product (Cloudinary):", error);
+            res.status(400).json({ success: false, message: error.message });
         }
+    }
 
         res.status(201).json({ success: true, data: populatedProduct });
     } catch (error) {
