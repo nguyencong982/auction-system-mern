@@ -30,10 +30,18 @@ const Home = () => {
   const navigate = useNavigate();
 
   const getFullImageUrl = (path) => {
-    if (!path) return null;
+    if (!path) return 'https://via.placeholder.com/300'; // Ảnh mặc định nếu lỗi
+
+    // Nếu path đã là một link hoàn chỉnh (bắt đầu bằng http từ Cloudinary)
     if (path.startsWith('http')) return path;
-    const cleanPath = path.startsWith('/') ? path.substring(1) : path;
-    return `${BASE_URL}/${cleanPath}?t=${new Date().getTime()}`;
+
+    // Trường hợp dự phòng nếu bạn vẫn còn ảnh cũ ở local (chỉ dùng khi dev)
+    const isDev = import.meta.env.MODE === 'development';
+    const BACKEND_URL = isDev
+      ? 'http://localhost:5000'
+      : 'https://auction-system-mern-xeyx.onrender.com';
+
+    return `${BACKEND_URL}/uploads/${path}`;
   };
 
   const [position, setPosition] = useState({
