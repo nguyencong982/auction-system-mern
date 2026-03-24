@@ -141,34 +141,20 @@ const ProfileHeader = ({ user, isOwnProfile, onUpdateSuccess }) => {
   // --- HÀM ĐÃ ĐƯỢC CẬP NHẬT ĐỂ CHẶN LOCALHOST ---
   // --- HÀM ĐÃ ĐƯỢC TỐI ƯU HÓA ---
   const getFullImageUrl = (path) => {
-    if (!path) return null;
+    if (!path || typeof path !== 'string') return FALLBACK_AVATAR;
 
+    // 1. Nếu là link từ Cloudinary (có chứa res.cloudinary.com hoặc http)
+    // Trả về nguyên văn link đó
+    if (path.startsWith('http')) return path;
+
+    // 2. Nếu là link cũ hoặc localhost (ví dụ: /uploads/abc.png)
     const serverRoot = 'https://auction-system-mern-xeyx.onrender.com';
 
-    // 1. Nếu là link tuyệt đối (Cloudinary/S3...) và KHÔNG chứa localhost -> Giữ nguyên
-    if (path.startsWith('http') && !path.includes('localhost')) {
-      return path;
-    }
+    // Xử lý trường hợp path dính chữ localhost từ trước
+    const cleanPath = path.includes('localhost') ? path.split(':5000').pop() : path;
 
-    // 2. Xử lý logic làm sạch path
-    let cleanPath = path;
-
-    // Nếu chứa localhost:5000, ta cắt lấy phần đuôi từ sau /uploads/ hoặc sau cổng 5000
-    if (path.includes('localhost')) {
-      const parts = path.split(':5000');
-      cleanPath = parts.length > 1 ? parts[1] : path.split('/').pop();
-    }
-
-    // Đảm bảo không bị lặp "/uploads/uploads/"
-    // Nếu cleanPath chưa có uploads, ta thêm vào (tùy thuộc vào cấu trúc server Render của bạn)
-    // Nhưng thường Render sẽ serve static folder là /uploads
-
-    // Chuẩn hóa dấu gạch chéo đầu dòng
-    if (!cleanPath.startsWith('/')) {
-      cleanPath = '/' + cleanPath;
-    }
-
-    return `${serverRoot}${cleanPath}`;
+    const finalPath = cleanPath.startsWith('/') ? cleanPath : `/${cleanPath}`;
+    return `${serverRoot}${finalPath}`;
   };
 
   const handleFileChange = (e, type) => {
