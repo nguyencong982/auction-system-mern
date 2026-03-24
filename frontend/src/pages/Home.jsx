@@ -6,6 +6,7 @@ import 'react-toastify/dist/ReactToastify.css';
 import { Link, useNavigate } from 'react-router-dom';
 import UserNavIcon from '../components/UserNavIcon';
 import CountdownTimer from '../components/CountdownTimer';
+import socket from '../socket';
 
 const BASE_URL = 'http://localhost:5000/uploads';
 
@@ -112,21 +113,27 @@ const Home = () => {
   }, [filters]);
 
   useEffect(() => {
-    const socket = io('http://localhost:5000');
-    if (user?._id) socket.emit('join', user._id);
+    // 2. Tham gia room cá nhân khi có user
+    if (user?._id) {
+      socket.emit('join', user._id);
+    }
 
-    socket.on('newProduct', (newProduct) => {
-      if (filters.category === 'Tất cả' || newProduct.category === filters.category) {
-        setProducts((prev) => [newProduct, ...prev]);
-      }
-      toast.info(`🔔 Sản phẩm mới: ${newProduct.title}`, {
-        position: 'bottom-right',
-        autoClose: 3000,
+    // 3. Định nghĩa các hàm callback để dễ dàng gỡ bỏ (cleanup)
+    const handleNewProduct = (newProduct) => {
+      setProducts((prev) => {
+        const isMatch = filters.category === 'Tất cả' || newProduct.category === filters.category;
+        if (isMatch && !prev.find((p) => p._id === newProduct._id)) {
+          return [newProduct, ...prev];
+        }
+        return prev;
       });
-    });
+      toast.info(`🔔 Sản phẩm mới: ${newProduct.title}`, { position: 'bottom-right' });
+    };
 
-    socket.on('priceUpdate', (updatedProduct) => {
-      setProducts((prev) => prev.map((p) => (p._id === updatedProduct._id ? updatedProduct : p)));
+    const handlePriceUpdate = (updatedProduct) => {
+      setProducts((prev) =>
+        prev.map((p) => (p._id === updatedProduct._id ? { ...p, ...updatedProduct } : p))
+      );
       setMyBids((prev) =>
         prev.map((b) =>
           b._id === updatedProduct._id
@@ -138,40 +145,33 @@ const Home = () => {
             : b
         )
       );
-    });
+    };
 
+    // 4. Đăng ký sự kiện
+    socket.on('newProduct', handleNewProduct);
+    socket.on('priceUpdate', handlePriceUpdate);
     socket.on('auctionEnded', (data) => {
       setProducts((prev) =>
         prev.map((p) => (p._id === data.productId ? { ...p, status: 'ended' } : p))
       );
-      toast.warn(`⌛ Phiên đấu giá "${data.title || 'Sản phẩm'}" đã kết thúc!`, {
-        position: 'top-right',
-        icon: '🔒',
-      });
+      toast.warn(`⌛ Phiên "${data.title}" đã kết thúc!`);
     });
-
-    socket.on('newFollowerProduct', (data) => {
-      toast.success(data.message, {
-        position: 'top-right',
-        autoClose: 6000,
-        icon: '🌟',
-        onClick: () => navigate(`/product/${data.productId}`),
-      });
-    });
-
     socket.on('newNotification', () => setUnreadCount((prev) => prev + 1));
-
     socket.on('depositSuccess', (data) => {
-      setUser((prev) => ({ ...prev, balance: data.newBalance }));
-      toast.success(data.message, {
-        icon: '💰',
-        position: 'top-right',
-        autoClose: 5000,
-      });
+      setUser((prev) => (prev ? { ...prev, balance: data.newBalance } : prev));
+      toast.success(data.message, { icon: '💰' });
     });
 
-    return () => socket.disconnect();
-  }, [user?._id, navigate, filters.category]);
+    // 5. Cleanup: Gỡ bỏ listener khi component unmount hoặc dependency thay đổi
+    return () => {
+      socket.off('newProduct', handleNewProduct);
+      socket.off('priceUpdate', handlePriceUpdate);
+      socket.off('auctionEnded');
+      socket.off('newNotification');
+      socket.off('depositSuccess');
+      // Lưu ý: KHÔNG ngắt kết nối socket.disconnect() ở đây nếu bạn muốn giữ kết nối xuyên suốt ứng dụng
+    };
+  }, [user?._id, filters.category]); // Lắng nghe lại khi user hoặc category thay đổi logic lọc
 
   if (loading && !user) {
     return (

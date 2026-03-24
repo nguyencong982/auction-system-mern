@@ -5,7 +5,7 @@ import { io } from 'socket.io-client';
 import { toast, ToastContainer } from 'react-toastify';
 import CountdownTimer from '../../components/CountdownTimer';
 
-const BASE_URL = 'http://localhost:5000/uploads';
+const BASE_URL = '';
 
 // Danh sách Sticker mẫu
 const STICKERS = [
@@ -96,8 +96,10 @@ const ProductDetail = () => {
     setCurrentUser(user);
     fetchProduct();
     fetchChatHistory();
+    const newSocket = io('https://auction-system-mern-xeyx.onrender.com', {
+      transports: ['websocket', 'polling'],
+    });
 
-    const newSocket = io('http://localhost:5000');
     setSocket(newSocket);
 
     newSocket.emit('joinChat', id);
