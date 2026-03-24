@@ -141,20 +141,24 @@ const ProfileHeader = ({ user, isOwnProfile, onUpdateSuccess }) => {
   // --- HÀM ĐÃ ĐƯỢC CẬP NHẬT ĐỂ CHẶN LOCALHOST ---
   // --- HÀM ĐÃ ĐƯỢC TỐI ƯU HÓA ---
   const getFullImageUrl = (path) => {
-    if (!path || typeof path !== 'string') return FALLBACK_AVATAR;
+    if (!path || typeof path !== 'string') return null; // Trả về null để dùng fallback sau
 
-    // 1. Nếu là link từ Cloudinary (có chứa res.cloudinary.com hoặc http)
-    // Trả về nguyên văn link đó
+    // 1. Nếu là link Cloudinary hoặc link tuyệt đối (bắt đầu bằng http)
     if (path.startsWith('http')) return path;
 
-    // 2. Nếu là link cũ hoặc localhost (ví dụ: /uploads/abc.png)
-    const serverRoot = 'https://auction-system-mern-xeyx.onrender.com';
+    // 2. Nếu là link có chứa localhost (lỗi tồn dư trong DB)
+    if (path.includes('localhost')) {
+      // Bóc tách lấy phần sau /uploads/...
+      const parts = path.split('/uploads/');
+      if (parts.length > 1) {
+        return `${BASE_URL}/uploads/${parts[1]}`;
+      }
+      return null; // Nếu không bóc tách được thì dùng fallback
+    }
 
-    // Xử lý trường hợp path dính chữ localhost từ trước
-    const cleanPath = path.includes('localhost') ? path.split(':5000').pop() : path;
-
-    const finalPath = cleanPath.startsWith('/') ? cleanPath : `/${cleanPath}`;
-    return `${serverRoot}${finalPath}`;
+    // 3. Nếu là link tương đối chuẩn (/uploads/...)
+    const cleanPath = path.startsWith('/') ? path : `/${path}`;
+    return `${BASE_URL}${cleanPath}`;
   };
 
   const handleFileChange = (e, type) => {
