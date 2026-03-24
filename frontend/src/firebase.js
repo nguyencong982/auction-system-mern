@@ -1,6 +1,6 @@
 import { initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
-// Tạm thời bỏ App Check để test SMS cho thông
+// Tạm thời comment dòng này lại
 // import { initializeAppCheck, ReCaptchaV3Provider } from "firebase/app-check";
 
 const firebaseConfig = {
@@ -10,17 +10,23 @@ const firebaseConfig = {
   storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
   messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
   appId: import.meta.env.VITE_FIREBASE_APP_ID,
+  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID
 };
 
 const app = initializeApp(firebaseConfig);
 
-// Chỉ bật Debug Token khi ở Local
-if (typeof window !== "undefined" && (location.hostname === "localhost")) {
+// TẮT ĐOẠN NÀY ĐI CÔNG ƠI:
+/*
+if (typeof window !== "undefined" && (location.hostname === "localhost" || location.hostname === "127.0.0.1")) {
   self.FIREBASE_APPCHECK_DEBUG_TOKEN = true;
 }
 
-export const auth = getAuth(app);
-// Cấu hình ngôn ngữ Tiếng Việt cho SMS
-auth.languageCode = 'vi'; 
+const appCheck = initializeAppCheck(app, {
+  provider: new ReCaptchaV3Provider(import.meta.env.VITE_RECAPTCHA_SITE_KEY),
+  isTokenAutoRefreshEnabled: true
+});
+*/
 
+export const auth = getAuth(app);
+auth.languageCode = 'vi'; // Thêm dòng này để tin nhắn gửi về bằng tiếng Việt
 export default app;
