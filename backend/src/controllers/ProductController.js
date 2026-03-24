@@ -4,7 +4,7 @@ import User from '../models/User.js';
 import Message from '../models/Message.js'; 
 
 class ProductController {
-    // 1. Lấy danh sách sản phẩm đang đấu giá (Public) - ĐÃ TÍCH HỢP SEARCH & FILTER
+    // 1. Lấy danh sách sản phẩm đang đấu giá
     getAllActive = async (req, res) => {
         try {
             const { search, category, minPrice, maxPrice, sort } = req.query;
@@ -79,7 +79,7 @@ class ProductController {
         }
     }
 
-    // 4. KIỂM TRA USER CÓ SẢN PHẨM KHÔNG ĐỂ HIỆN MENU
+    // 4. KIỂM TRA USER CÓ SẢN PHẨM KHÔNG
     checkUserHasProducts = async (req, res) => {
         try {
             const userId = req.user.id;
@@ -113,9 +113,8 @@ class ProductController {
         }
     }
 
-    // 6. ĐĂNG SẢN PHẨM - ĐÃ FIX URL ẢNH ĐỂ CHẠY TRÊN RENDER
-    // 6. ĐĂNG SẢN PHẨM - TÍCH HỢP CLOUDINARY
-create = async (req, res) => {
+    // 6. ĐĂNG SẢN PHẨM (Cloudinary + Fix endTime)
+    create = async (req, res) => {
         try {
             const ownerId = req.user.id;
             const { 
@@ -124,25 +123,30 @@ create = async (req, res) => {
                 initialPrice, 
                 stepPrice, 
                 category, 
-                durationHours 
+                durationHours,
+                endTime 
             } = req.body; 
             
             if (!req.file) {
                 return res.status(400).json({ success: false, message: "Vui lòng upload ảnh sản phẩm!" });
             }
 
-            // ĐÂY LÀ ĐOẠN QUAN TRỌNG NHẤT: Đổi 'image' thành 'imageUrl'
             const productData = { 
                 title,
                 description,
                 initialPrice: Number(initialPrice),
                 stepPrice: Number(stepPrice),
                 category: category,
-                imageUrl: req.file.path // Cloudinary trả về link nằm trong req.file.path
+                imageUrl: req.file.path // Đường dẫn từ Cloudinary
             };
 
-            const hours = parseInt(durationHours) || 24;
-            productData.endTime = new Date(Date.now() + hours * 60 * 60 * 1000);
+            // Ưu tiên endTime từ Frontend chọn, nếu không có mới dùng durationHours
+            if (endTime) {
+                productData.endTime = new Date(endTime);
+            } else {
+                const hours = parseInt(durationHours) || 24;
+                productData.endTime = new Date(Date.now() + hours * 60 * 60 * 1000);
+            }
             
             const product = await ProductService.createProduct(productData, ownerId);
             
@@ -152,33 +156,13 @@ create = async (req, res) => {
             const io = req.app.get('socketio');
             if (io) io.emit('newProduct', populatedProduct);
 
-            // Thông báo cho followers
-            const owner = await User.findById(ownerId).populate('followers');
-            if (owner && owner.followers.length > 0) {
-                owner.followers.forEach(follower => {
-                    if (io) io.to(follower._id.toString()).emit('newFollowerProduct', {
-                        message: `🌟 ${owner.fullName} vừa đăng bán sản phẩm mới: ${product.title}`,
-                        productId: product._id,
-                        ownerName: owner.fullName,
-                        ownerId: owner._id,
-                        ownerAvatar: owner.avatar 
-                    });
-                });
-            }
-
             res.status(201).json({ success: true, data: populatedProduct });
+
         } catch (error) {
-            console.error("🔥 Lỗi Create Product (Cloudinary):", error);
+            console.error("🔥 Lỗi Create Product:", error);
             res.status(400).json({ success: false, message: error.message });
         }
     }
-
-        res.status(201).json({ success: true, data: populatedProduct });
-    } catch (error) {
-        console.error("🔥 Lỗi Create Product (Cloudinary):", error);
-        res.status(400).json({ success: false, message: error.message });
-    }
-}
 
     // 7. Cập nhật sản phẩm
     update = async (req, res) => {
@@ -279,7 +263,7 @@ create = async (req, res) => {
         }
     }
 
-    // 10. Lấy lịch sử đấu giá của người dùng
+    // 10. Lấy lịch sử đấu giá
     getMyBidHistory = async (req, res) => {
         try {
             const userId = req.user.id;
