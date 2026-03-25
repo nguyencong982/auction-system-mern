@@ -33,7 +33,6 @@ const ProductDetail = () => {
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
   const [bidAmount, setBidAmount] = useState('');
-  // Mặc định đóng sidebar trên mobile, mở trên desktop
   const [isSidebarOpen, setIsSidebarOpen] = useState(window.innerWidth > 1024);
   const [currentUser, setCurrentUser] = useState(null);
   const [messages, setMessages] = useState([]);
@@ -186,7 +185,7 @@ const ProductDetail = () => {
       `}</style>
       <ToastContainer />
 
-      {/* Sidebar - Tối ưu Responsive */}
+      {/* Sidebar */}
       <aside
         className={`${isSidebarOpen ? 'w-full lg:w-64' : 'w-0 lg:w-24'} sticky top-0 z-[100] flex flex-col overflow-hidden border-r border-gray-100 bg-white transition-all duration-300 lg:h-screen lg:overflow-visible`}
       >
@@ -220,7 +219,7 @@ const ProductDetail = () => {
               onClick={() => navigate('/')}
               className="flex w-full items-center gap-4 rounded-2xl p-4 font-bold text-gray-500 transition-all hover:bg-blue-50 hover:text-blue-600"
             >
-              <span className="text-xl">🏠</span>{' '}
+              <span className="text-xl">🏠</span>
               {(isSidebarOpen || window.innerWidth > 1024) && 'Trang chủ'}
             </button>
           </nav>
@@ -235,9 +234,9 @@ const ProductDetail = () => {
           ← Quay lại
         </button>
 
-        {/* Product Hero Section - Responsive Layout */}
+        {/* Product Hero Section */}
         <div className="mx-auto mb-8 flex max-w-6xl flex-col overflow-hidden rounded-[30px] border border-gray-100 bg-white shadow-sm md:rounded-[50px] lg:mb-12 lg:flex-row">
-          <div className="relative h-[350px] bg-gray-100 md:h-[500px] lg:h-[600px] lg:w-1/2">
+          <div className="relative h-[300px] bg-gray-100 md:h-[500px] lg:h-[600px] lg:w-1/2">
             <img
               src={product.image || product.imageUrl}
               alt={product.title}
@@ -267,7 +266,6 @@ const ProductDetail = () => {
                   {product.owner?.avatar ? (
                     <img
                       src={getFullImageUrl(product.owner.avatar)}
-                      alt={product.owner.fullName}
                       className="h-full w-full object-cover"
                     />
                   ) : (
@@ -287,61 +285,59 @@ const ProductDetail = () => {
               </Link>
             </div>
 
-            <h1 className="mb-4 text-3xl leading-tight font-black tracking-tight text-gray-900 md:text-4xl lg:text-5xl">
+            <h1 className="mb-4 text-2xl leading-tight font-black tracking-tight text-gray-900 md:text-4xl lg:text-5xl">
               {product.title}
             </h1>
-            <p className="mb-6 text-base leading-relaxed text-gray-500 italic md:mb-10 md:text-xl">
+            <p className="mb-6 text-sm leading-relaxed text-gray-500 italic md:mb-10 md:text-xl">
               "{product.description}"
             </p>
 
             <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2 md:mb-12 md:gap-8">
-              <div className="rounded-[25px] border border-blue-100 bg-blue-50 p-6 md:rounded-[35px] md:p-8">
+              <div className="rounded-[20px] border border-blue-100 bg-blue-50 p-5 md:rounded-[35px] md:p-8">
                 <p className="mb-1 text-[9px] font-black text-blue-400 uppercase md:text-[10px]">
                   Giá hiện tại
                 </p>
-                <p className="text-2xl font-black text-blue-600 md:text-4xl">
+                <p className="text-xl font-black text-blue-600 md:text-4xl">
                   {Number(product.currentPrice || 0).toLocaleString()}đ
                 </p>
               </div>
-              <div className="rounded-[25px] border border-gray-100 bg-gray-50 p-6 md:rounded-[35px] md:p-8">
+              <div className="rounded-[20px] border border-gray-100 bg-gray-50 p-5 md:rounded-[35px] md:p-8">
                 <p className="mb-1 text-[9px] font-black text-gray-400 uppercase md:text-[10px]">
-                  Bước giá tối thiểu
+                  Bước giá
                 </p>
-                <p className="text-2xl font-black text-gray-800 md:text-4xl">
+                <p className="text-xl font-black text-gray-800 md:text-4xl">
                   +{Number(product.stepPrice || 0).toLocaleString()}đ
                 </p>
               </div>
             </div>
 
             {isOwner ? (
-              <div className="rounded-[25px] border border-amber-100 bg-amber-50 p-6 text-center md:rounded-[35px] md:p-8">
-                <p className="text-sm font-black text-amber-700 italic md:text-base">
-                  ✋ Bạn không thể tự đấu giá sản phẩm của mình
+              <div className="rounded-[20px] border border-amber-100 bg-amber-50 p-5 text-center md:rounded-[35px]">
+                <p className="text-xs font-black text-amber-700 italic md:text-base">
+                  ✋ Bạn không thể tự đấu giá
                 </p>
               </div>
             ) : isEnded ? (
-              <div className="rounded-[25px] border border-red-100 bg-red-50 p-6 text-center md:rounded-[35px] md:p-8">
-                <p className="text-sm font-black text-red-700 uppercase italic md:text-base">
-                  🔒 Phiên đấu giá đã kết thúc
+              <div className="rounded-[20px] border border-red-100 bg-red-50 p-5 text-center md:rounded-[35px]">
+                <p className="text-xs font-black text-red-700 uppercase italic md:text-base">
+                  🔒 Đã kết thúc
                 </p>
               </div>
             ) : (
-              <div className="space-y-4">
-                <div className="flex flex-col items-stretch gap-3 rounded-[25px] border border-gray-200 bg-gray-50 p-2 transition-all focus-within:ring-4 focus-within:ring-blue-100 sm:flex-row md:rounded-[35px]">
-                  <input
-                    type="number"
-                    value={bidAmount}
-                    onChange={(e) => setBidAmount(e.target.value)}
-                    placeholder="Nhập giá thầu..."
-                    className="flex-1 bg-transparent px-6 py-4 text-lg font-black text-gray-800 outline-none md:py-5 md:text-xl"
-                  />
-                  <button
-                    onClick={handleBid}
-                    className="rounded-[20px] bg-blue-600 px-8 py-4 font-black text-white shadow-lg transition-all hover:bg-blue-700 active:scale-95 md:rounded-[30px] md:px-12 md:py-5"
-                  >
-                    ĐẶT GIÁ
-                  </button>
-                </div>
+              <div className="flex flex-col gap-3 rounded-[20px] border border-gray-200 bg-gray-50 p-2 sm:flex-row md:rounded-[35px]">
+                <input
+                  type="number"
+                  value={bidAmount}
+                  onChange={(e) => setBidAmount(e.target.value)}
+                  placeholder="Giá thầu..."
+                  className="flex-1 bg-transparent px-5 py-3 text-lg font-black text-gray-800 outline-none md:py-5 md:text-xl"
+                />
+                <button
+                  onClick={handleBid}
+                  className="rounded-[15px] bg-blue-600 px-6 py-3 font-black text-white shadow-lg md:rounded-[30px] md:px-12 md:py-5"
+                >
+                  ĐẶT GIÁ
+                </button>
               </div>
             )}
           </div>
@@ -349,18 +345,18 @@ const ProductDetail = () => {
 
         <div className="mx-auto grid max-w-6xl grid-cols-1 gap-8 lg:grid-cols-2 lg:gap-12">
           {/* LỊCH SỬ ĐẤU GIÁ */}
-          <section>
-            <h2 className="mb-6 text-xl font-black text-gray-900 italic underline decoration-blue-500 underline-offset-8 md:mb-8 md:text-2xl">
+          <section className="w-full">
+            <h2 className="mb-6 text-xl font-black text-gray-900 italic underline decoration-blue-500 underline-offset-8 md:text-2xl">
               Lịch sử đấu giá
             </h2>
-            <div className="overflow-hidden rounded-[30px] border border-gray-100 bg-white shadow-sm md:rounded-[40px]">
+            <div className="overflow-hidden rounded-[25px] border border-gray-100 bg-white shadow-sm md:rounded-[40px]">
               <table className="w-full text-left">
                 <thead>
                   <tr className="border-b border-gray-100 bg-gray-50/50">
-                    <th className="p-4 text-[9px] font-black text-gray-400 uppercase md:p-6 md:text-[10px]">
+                    <th className="p-4 text-[9px] font-black text-gray-400 uppercase md:p-6">
                       Người tham gia
                     </th>
-                    <th className="p-4 text-right text-[9px] font-black text-gray-400 uppercase md:p-6 md:text-[10px]">
+                    <th className="p-4 text-right text-[9px] font-black text-gray-400 uppercase md:p-6">
                       Số tiền
                     </th>
                   </tr>
@@ -369,59 +365,51 @@ const ProductDetail = () => {
                   {product.bidHistory?.length > 0 ? (
                     [...product.bidHistory]
                       .reverse()
-                      .slice(0, 10)
-                      .map((bid, index) => {
-                        const bidderId = bid.bidder?._id || bid.bidder;
-                        return (
-                          <tr
-                            key={index}
-                            className={`group transition-all hover:bg-blue-50/20 ${index === 0 ? 'bg-blue-50/30' : ''}`}
-                          >
-                            <td className="p-4 md:p-6">
-                              <Link
-                                to={`/profile/${bidderId}`}
-                                className="group/user flex items-center gap-3"
+                      .slice(0, 8)
+                      .map((bid, index) => (
+                        <tr
+                          key={index}
+                          className={`group transition-all hover:bg-blue-50/20 ${index === 0 ? 'bg-blue-50/30' : ''}`}
+                        >
+                          <td className="p-4 md:p-6">
+                            <Link
+                              to={`/profile/${bid.bidder?._id || bid.bidder}`}
+                              className="flex items-center gap-2"
+                            >
+                              <div
+                                className={`h-8 w-8 shrink-0 overflow-hidden rounded-full border-2 border-white bg-blue-100 ${index === 0 ? 'ring-2 ring-blue-600' : ''}`}
                               >
-                                <div
-                                  className={`relative flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full border-2 border-white bg-blue-100 shadow-sm md:h-10 md:w-10 ${index === 0 ? 'ring-2 ring-blue-600 ring-offset-1' : ''}`}
-                                >
-                                  {bid.bidder?.avatar ? (
-                                    <img
-                                      src={getFullImageUrl(bid.bidder.avatar)}
-                                      className="h-full w-full object-cover"
-                                    />
-                                  ) : (
-                                    <span className="text-[10px] font-black text-blue-600 md:text-[12px]">
-                                      {bid.bidder?.fullName?.charAt(0).toUpperCase() || 'U'}
-                                    </span>
-                                  )}
-                                </div>
-                                <div className="flex flex-col">
-                                  <span className="max-w-[100px] truncate text-xs font-bold text-gray-900 md:max-w-none md:text-sm">
-                                    {bid.bidder?.fullName || 'Ẩn danh'}
+                                {bid.bidder?.avatar ? (
+                                  <img
+                                    src={getFullImageUrl(bid.bidder.avatar)}
+                                    className="h-full w-full object-cover"
+                                  />
+                                ) : (
+                                  <span className="flex h-full items-center justify-center text-[10px] font-black text-blue-600 uppercase">
+                                    {bid.bidder?.fullName?.charAt(0) || 'U'}
                                   </span>
-                                  {index === 0 && (
-                                    <span className="text-[7px] font-black text-blue-500 uppercase md:text-[8px]">
-                                      🔥 Dẫn đầu
-                                    </span>
-                                  )}
-                                </div>
-                              </Link>
-                            </td>
-                            <td className="p-4 text-right text-sm font-black text-gray-900 md:p-6 md:text-base">
-                              <span className={index === 0 ? 'text-blue-600' : ''}>
-                                {Number(bid.amount).toLocaleString()}đ
-                              </span>
-                            </td>
-                          </tr>
-                        );
-                      })
+                                )}
+                              </div>
+                              <div className="flex flex-col">
+                                <span className="max-w-[80px] truncate text-xs font-bold text-gray-900 md:max-w-none">
+                                  {bid.bidder?.fullName || 'Ẩn danh'}
+                                </span>
+                                {index === 0 && (
+                                  <span className="text-[7px] font-black text-blue-500 uppercase">
+                                    🔥 Dẫn đầu
+                                  </span>
+                                )}
+                              </div>
+                            </Link>
+                          </td>
+                          <td className="p-4 text-right text-sm font-black text-gray-900 md:p-6 md:text-base">
+                            {Number(bid.amount).toLocaleString()}đ
+                          </td>
+                        </tr>
+                      ))
                   ) : (
                     <tr>
-                      <td
-                        colSpan="2"
-                        className="p-12 text-center font-bold text-gray-300 italic md:p-20"
-                      >
+                      <td colSpan="2" className="p-12 text-center font-bold text-gray-300 italic">
                         Chưa có lượt thầu
                       </td>
                     </tr>
@@ -431,13 +419,13 @@ const ProductDetail = () => {
             </div>
           </section>
 
-          {/* KHUNG CHAT */}
-          <section className="flex flex-col">
-            <h2 className="mb-6 text-xl font-black text-gray-900 italic underline decoration-green-500 underline-offset-8 md:mb-8 md:text-2xl">
+          {/* KHUNG CHAT - Đã tối ưu Responsive */}
+          <section className="flex w-full flex-col">
+            <h2 className="mb-6 text-xl font-black text-gray-900 italic underline decoration-green-500 underline-offset-8 md:text-2xl">
               Thảo luận
             </h2>
-            <div className="relative flex h-[450px] flex-1 flex-col overflow-hidden rounded-[30px] border border-gray-100 bg-white shadow-sm md:h-[500px] md:rounded-[40px]">
-              <div className="flex-1 space-y-4 overflow-y-auto bg-gray-50/30 p-4 md:p-6">
+            <div className="relative flex h-[500px] w-full flex-col overflow-hidden rounded-[25px] border border-gray-100 bg-white shadow-sm md:h-[600px] md:rounded-[40px]">
+              <div className="flex-1 space-y-4 overflow-y-auto bg-gray-50/30 p-3 md:p-6">
                 {messages.length > 0 ? (
                   messages.map((m, i) => {
                     const isMe = m.sender?._id === currentUserId || m.sender === currentUserId;
@@ -447,7 +435,7 @@ const ProductDetail = () => {
                         key={i}
                         className={`flex gap-2 md:gap-3 ${isMe ? 'flex-row-reverse' : ''}`}
                       >
-                        <div className="flex h-7 w-7 shrink-0 items-center justify-center overflow-hidden rounded-full border border-white bg-blue-100 text-[9px] font-black text-blue-600 md:h-8 md:w-8">
+                        <div className="flex h-7 w-7 shrink-0 items-center justify-center overflow-hidden rounded-full border border-white bg-blue-100 text-[9px] font-black text-blue-600 md:h-9 md:w-9">
                           {m.sender?.avatar ? (
                             <img
                               src={getFullImageUrl(m.sender.avatar)}
@@ -458,7 +446,7 @@ const ProductDetail = () => {
                           )}
                         </div>
                         <div
-                          className={`max-w-[85%] ${isSticker ? 'bg-transparent shadow-none' : `rounded-[20px] p-3 shadow-sm md:rounded-[25px] md:p-4 ${isMe ? 'rounded-tr-none bg-blue-600 text-white' : 'rounded-tl-none border border-gray-100 bg-white text-gray-800'}`}`}
+                          className={`max-w-[90%] md:max-w-[85%] ${isSticker ? 'bg-transparent shadow-none' : `rounded-[18px] p-3 shadow-sm md:rounded-[25px] md:p-4 ${isMe ? 'rounded-tr-none bg-blue-600 text-white' : 'rounded-tl-none border border-gray-100 bg-white text-gray-800'}`}`}
                         >
                           {!isMe && (
                             <p className="mb-1 text-[8px] font-black uppercase opacity-50">
@@ -486,9 +474,10 @@ const ProductDetail = () => {
                 <div ref={chatEndRef} />
               </div>
 
+              {/* Picker Emoji/Sticker */}
               {showPicker && (
                 <div className="absolute right-2 bottom-20 left-2 z-10 rounded-2xl border border-gray-100 bg-white/95 p-3 shadow-2xl backdrop-blur-md">
-                  <div className="mb-2 flex max-h-20 flex-wrap gap-2 overflow-y-auto border-b border-gray-100 pb-2">
+                  <div className="scrollbar-hide mb-2 flex max-h-24 flex-wrap gap-2 overflow-y-auto border-b border-gray-100 pb-2">
                     {EMOJIS.map((emoji) => (
                       <button
                         key={emoji}
@@ -512,7 +501,8 @@ const ProductDetail = () => {
                 </div>
               )}
 
-              <div className="flex gap-2 border-t border-gray-100 bg-white p-3 md:p-4">
+              {/* Chat Input */}
+              <div className="flex gap-2 border-t border-gray-100 bg-white p-2 md:p-4">
                 <button
                   onClick={() => setShowPicker(!showPicker)}
                   className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-lg md:h-12 md:w-12 ${showPicker ? 'bg-blue-100 text-blue-600' : 'bg-gray-100 text-gray-500'}`}
@@ -525,7 +515,7 @@ const ProductDetail = () => {
                   onChange={(e) => setInputMessage(e.target.value)}
                   onKeyPress={(e) => e.key === 'Enter' && handleSendChat()}
                   placeholder="Hỏi về sản phẩm..."
-                  className="flex-1 rounded-xl bg-gray-50 px-4 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500"
+                  className="flex-1 rounded-xl bg-gray-50 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500"
                 />
                 <button
                   onClick={() => handleSendChat()}
