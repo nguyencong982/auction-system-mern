@@ -11,7 +11,7 @@ const UserNavIcon = ({ user }) => {
   const menuRef = useRef(null);
   const navigate = useNavigate();
 
-  // 1. Kiểm tra xem người dùng có sản phẩm nào không để hiện menu bán hàng
+  // 1. Kiểm tra trạng thái người bán
   useEffect(() => {
     const checkSellerStatus = async () => {
       if (user) {
@@ -28,7 +28,7 @@ const UserNavIcon = ({ user }) => {
     checkSellerStatus();
   }, [user]);
 
-  // 2. Xử lý đóng menu khi click ra ngoài
+  // 2. Đóng menu khi click ra ngoài
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (menuRef.current && !menuRef.current.contains(event.target)) {
@@ -53,11 +53,15 @@ const UserNavIcon = ({ user }) => {
       {/* Nút Avatar */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center justify-center transition-transform focus:outline-none active:scale-90"
+        className="flex items-center justify-center transition-transform focus:outline-none active:scale-95"
         title="Tài khoản của bạn"
       >
         <div
-          className={`h-10 w-10 overflow-hidden rounded-full border-2 shadow-sm transition-all ${isOpen ? 'border-blue-500 ring-2 ring-blue-100' : 'border-gray-100 hover:border-blue-400'}`}
+          className={`h-10 w-10 overflow-hidden rounded-full border-2 shadow-sm transition-all md:h-11 md:w-11 ${
+            isOpen
+              ? 'border-blue-500 ring-2 ring-blue-100'
+              : 'border-gray-100 hover:border-blue-400'
+          }`}
         >
           <img
             src={getFullImageUrl(user.avatar)}
@@ -71,73 +75,78 @@ const UserNavIcon = ({ user }) => {
         </div>
       </button>
 
-      {/* Dropdown Menu */}
+      {/* Dropdown Menu - Đã tối ưu cho Mobile */}
       {isOpen && (
-        <div className="animate-in fade-in slide-in-from-top-2 absolute right-0 z-[100] mt-3 w-64 rounded-3xl border border-gray-100 bg-white py-3 shadow-2xl duration-200">
-          <div className="mb-2 border-b border-gray-50 px-4 py-2">
-            <p className="text-xs font-black text-gray-400 uppercase">Tài khoản</p>
-            <p className="truncate font-bold text-gray-800">{user.fullName}</p>
+        <div className="animate-in fade-in slide-in-from-top-2 absolute right-0 z-[110] mt-3 w-64 max-w-[85vw] rounded-2xl border border-gray-100 bg-white py-2 shadow-2xl duration-200 md:rounded-3xl md:py-3">
+          <div className="mb-1 border-b border-gray-50 px-5 py-3">
+            <p className="text-[10px] font-black tracking-wider text-gray-400 uppercase">
+              Tài khoản
+            </p>
+            <p className="truncate text-sm font-bold text-gray-800 md:text-base">{user.fullName}</p>
           </div>
 
-          <Link
-            to={`/profile/${user._id}`}
-            onClick={() => setIsOpen(false)}
-            className="flex items-center gap-3 px-4 py-3 text-gray-700 transition-colors hover:bg-gray-50"
-          >
-            <span className="text-xl">👤</span>
-            <span className="font-medium">Trang cá nhân</span>
-          </Link>
+          <div className="flex flex-col">
+            <Link
+              to={`/profile/${user._id}`}
+              onClick={() => setIsOpen(false)}
+              className="flex items-center gap-4 px-5 py-3 text-gray-700 transition-colors hover:bg-gray-50 active:bg-gray-100"
+            >
+              <span className="text-xl">👤</span>
+              <span className="text-sm font-medium md:text-base">Trang cá nhân</span>
+            </Link>
 
-          <Link
-            to="/my-bids"
-            onClick={() => setIsOpen(false)}
-            className="flex items-center gap-3 px-4 py-3 text-gray-700 transition-colors hover:bg-gray-50"
-          >
-            <span className="text-xl">🔨</span>
-            <span className="font-medium">Lịch sử đấu giá</span>
-          </Link>
+            <Link
+              to="/my-bids"
+              onClick={() => setIsOpen(false)}
+              className="flex items-center gap-4 px-5 py-3 text-gray-700 transition-colors hover:bg-gray-50 active:bg-gray-100"
+            >
+              <span className="text-xl">🔨</span>
+              <span className="text-sm font-medium md:text-base">Lịch sử đấu giá</span>
+            </Link>
 
-          {/* CHỈ HIỂN THỊ NẾU ĐÃ TỪNG ĐĂNG SẢN PHẨM */}
-          {hasProducts && (
-            <>
-              <div className="mx-4 my-1 h-[1px] bg-gray-50"></div>
-              <div className="px-4 py-2">
-                <p className="text-[10px] font-black text-blue-500 uppercase">Dành cho người bán</p>
-              </div>
+            {/* CHỈ HIỂN THỊ NẾU ĐÃ TỪNG ĐĂNG SẢN PHẨM */}
+            {hasProducts && (
+              <>
+                <div className="mx-5 my-1 h-[1px] bg-gray-50"></div>
+                <div className="px-5 py-2">
+                  <p className="text-[10px] font-black tracking-wider text-blue-500 uppercase">
+                    Dành cho người bán
+                  </p>
+                </div>
 
-              <Link
-                to="/manage-products"
-                onClick={() => setIsOpen(false)}
-                className="flex items-center gap-3 px-4 py-3 text-gray-700 transition-colors hover:bg-gray-50"
-              >
-                <span className="text-xl">📦</span>
-                <span className="font-medium">Quản lý kho hàng</span>
-              </Link>
+                <Link
+                  to="/manage-products"
+                  onClick={() => setIsOpen(false)}
+                  className="flex items-center gap-4 px-5 py-3 text-gray-700 transition-colors hover:bg-gray-50 active:bg-gray-100"
+                >
+                  <span className="text-xl">📦</span>
+                  <span className="text-sm font-medium md:text-base">Quản lý kho hàng</span>
+                </Link>
 
-              <Link
-                to="/sold-products"
-                onClick={() => setIsOpen(false)}
-                className="flex items-center gap-3 px-4 py-3 text-blue-700 transition-colors hover:bg-blue-50"
-              >
-                <span className="text-xl">💰</span>
-                <span className="font-bold font-medium">Đơn hàng đã bán</span>
-              </Link>
-            </>
-          )}
+                <Link
+                  to="/sold-products"
+                  onClick={() => setIsOpen(false)}
+                  className="flex items-center gap-4 px-5 py-3 text-blue-700 transition-colors hover:bg-blue-50 active:bg-blue-100"
+                >
+                  <span className="text-xl">💰</span>
+                  <span className="text-sm font-bold md:text-base">Đơn hàng đã bán</span>
+                </Link>
+              </>
+            )}
 
-          <div className="mx-4 my-1 h-[1px] bg-gray-50"></div>
+            <div className="mx-5 my-1 h-[1px] bg-gray-50"></div>
 
-          <button
-            onClick={() => {
-              // Thêm logic Logout của bạn ở đây
-              localStorage.removeItem('token');
-              window.location.href = '/login';
-            }}
-            className="flex w-full items-center gap-3 px-4 py-3 text-left text-red-600 transition-colors hover:bg-red-50"
-          >
-            <span className="text-xl">🚪</span>
-            <span className="font-medium">Đăng xuất</span>
-          </button>
+            <button
+              onClick={() => {
+                localStorage.removeItem('token');
+                window.location.href = '/login';
+              }}
+              className="flex w-full items-center gap-4 px-5 py-3 text-left text-red-600 transition-colors hover:bg-red-50 active:bg-red-100"
+            >
+              <span className="text-xl">🚪</span>
+              <span className="text-sm font-medium md:text-base">Đăng xuất</span>
+            </button>
+          </div>
         </div>
       )}
     </div>
