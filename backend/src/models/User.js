@@ -35,7 +35,11 @@ const userSchema = new mongoose.Schema({
     paymentPassword: {
     type: String,
     default: "", 
-    select: false // Thêm dòng này để bảo mật tốt hơn
+    select: false 
+},
+hasPaymentPin: { // Thêm trường này để Frontend nhận biết trạng thái nhanh
+    type: Boolean,
+    default: false
 },
 
     // --- HÌNH ẢNH ---

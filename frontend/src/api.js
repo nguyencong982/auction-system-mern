@@ -2,53 +2,62 @@ import axios from 'axios';
 
 // 1. Cấu hình instance Axios
 const API = axios.create({
-    // Ưu tiên lấy link từ biến môi trường Vercel, nếu không có sẽ dùng thẳng link Render
-    baseURL: import.meta.env.VITE_API_URL || 'https://auction-system-mern-xeyx.onrender.com/api'
+    // Logic này đảm bảo LUÔN LUÔN có đuôi /api
+    baseURL: (import.meta.env.VITE_API_URL 
+        ? (import.meta.env.VITE_API_URL.endsWith('/api') 
+            ? import.meta.env.VITE_API_URL 
+            : `${import.meta.env.VITE_API_URL}/api`)
+        : 'https://auction-system-mern-xeyx.onrender.com/api'),
+    headers: {
+        'Content-Type': 'application/json'
+    }
 });
 
-// 2. Tự động đính kèm Token vào header
+// 2. Interceptor xử lý Token và FormData
 API.interceptors.request.use((req) => {
     const token = localStorage.getItem('token');
     if (token) {
         req.headers.Authorization = `Bearer ${token}`;
     }
+    
+    if (req.data instanceof FormData) {
+        delete req.headers['Content-Type'];
+    }
+    
     return req;
 });
 
-// 3. Các hàm gọi API cụ thể
+// --- 3. CÁC HÀM GỌI API (EXPORT CHI TIẾT) ---
 
-// Đăng nhập
-export const login = async (credentials) => {
-    const response = await API.post('/auth/login', credentials);
-    return response.data;
-};
+// A. Nhóm Xác thực & Profile
+export const login = (formData) => API.post('/auth/login', formData);
+export const register = (formData) => API.post('/auth/register', formData);
+export const getMyProfile = () => API.get('/auth/profile');
+export const updateProfile = (data) => API.put('/auth/profile', data);
+export const resetPassword = (data) => API.post('/auth/reset-password', data);
 
-// Đăng ký
-export const register = async (userData) => {
-    const response = await API.post('/auth/register', userData);
-    return response.data;
-};
+// B. Nhóm Mã PIN Thanh Toán (MỚI)
+// Thiết lập lần đầu (cần password đăng nhập)
+export const setupPaymentPin = (data) => API.post('/auth/setup-payment-pin', data);
+// Đổi/Quên mã PIN (sau khi xác thực OTP)
+export const resetPaymentPinByOTP = (data) => API.post('/auth/reset-payment-pin', data);
 
-// Gửi mã OTP về số điện thoại
-export const sendOTP = async (phone) => {
-    try {
-        const response = await API.post('/auth/send-otp', { phone });
-        return response.data;
-    } catch (error) {
-        throw error.response?.data || { message: "Không thể gửi mã OTP" };
-    }
-};
+// C. Nhóm Sản phẩm & Đấu giá
+export const fetchProducts = () => API.get('/products');
+export const fetchProductDetail = (id) => API.get(`/products/${id}`);
+export const createProduct = (formData) => API.post('/products', formData);
+export const placeBid = (data) => API.post('/products/bid', data);
+export const getMyProducts = () => API.get('/products/my-products');
 
-// Đặt lại mật khẩu (Cần truyền thêm otp để xác thực)
-export const resetPassword = async (phone, otp, newPassword) => {
-    try {
-        // Gửi cả phone, otp và mật khẩu mới lên backend
-        const response = await API.post('/auth/reset-password', { phone, otp, newPassword });
-        return response.data;
-    } catch (error) {
-        throw error.response?.data || { message: "Lỗi kết nối server" };
-    }
-};
+// D. Nhóm Tài chính & Rút tiền (MỚI)
+export const depositMoney = (amount) => API.post('/user/deposit', { amount });
+// Gửi yêu cầu rút tiền (Body phải chứa paymentPin)
+export const createWithdrawalRequest = (data) => API.post('/withdrawals/request', data);
+export const getWithdrawalHistory = () => API.get('/withdrawals/my-history');
 
-// Xuất instance API để dùng cho các chỗ khác (nếu cần)
+// E. Nhóm Thông báo & Tương tác
+export const getNotifications = () => API.get('/notifications');
+export const getUnreadCount = () => API.get('/notifications/unread-count');
+export const toggleFollow = (id) => API.post(`/users/follow/${id}`);
+
 export default API;

@@ -20,5 +20,6 @@ router.get('/', auth, getAllWithdrawals);
 
 // Đường dẫn đầy đủ: PUT /api/withdrawals/:id/status (Admin duyệt)
 router.put('/:id/status', auth, approveWithdrawal);
+router.post('/request', auth, requirePin, createWithdrawal);
 
 export default router;

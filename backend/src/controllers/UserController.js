@@ -287,46 +287,74 @@ register = async (req, res) => {
     } // Đóng hàm updateProfileImage
 
     // --- MỚI: THIẾT LẬP MÃ PIN THANH TOÁN ---
+    // --- CẬP NHẬT: THIẾT LẬP MÃ PIN LẦN ĐẦU (Dùng mật khẩu đăng nhập để xác thực) ---
+// 1. Tạo PIN lần đầu (Xác thực bằng mật khẩu đăng nhập)
+// --- 1. THIẾT LẬP MÃ PIN LẦN ĐẦU (Dùng mật khẩu đăng nhập) ---
     setupPaymentPassword = async (req, res) => {
         try {
             const { pin, password } = req.body;
             const userId = req.user.id;
 
-            if (!pin || !password) {
-                return res.status(400).json({ 
-                    success: false, 
-                    message: "Vui lòng nhập đầy đủ mã PIN và mật khẩu xác nhận" 
-                });
-            }
+            // Lấy user kèm cả mật khẩu đăng nhập và mã PIN để kiểm tra
+            const user = await User.findById(userId).select('+password +paymentPassword');
 
-            const user = await User.findById(userId).select('+password');
             if (!user) {
                 return res.status(404).json({ success: false, message: "Người dùng không tồn tại" });
             }
 
-            const isMatch = await UserService.comparePassword(password, user.password); 
-            
+            // Nếu đã có PIN rồi thì không cho dùng hàm này nữa
+            if (user.paymentPassword) {
+                return res.status(400).json({ success: false, message: "Mã PIN đã tồn tại! Vui lòng dùng chức năng Quên mã PIN." });
+            }
+
+            // Xác thực bằng mật khẩu đăng nhập (Mật khẩu cấp 1)
+            const isMatch = await UserService.comparePassword(password, user.password);
             if (!isMatch) {
                 return res.status(400).json({ success: false, message: "Mật khẩu đăng nhập không chính xác" });
             }
 
+            // Kiểm tra định dạng PIN (6 chữ số)
             if (!/^\d{6}$/.test(pin)) {
                 return res.status(400).json({ success: false, message: "Mã PIN phải bao gồm 6 chữ số" });
             }
 
-            const salt = await UserService.generateSalt(10); 
+            const salt = await UserService.generateSalt(10);
             const hashedPin = await UserService.hashPassword(pin, salt);
 
-            await User.findByIdAndUpdate(userId, { paymentPassword: hashedPin });
-
-            res.status(200).json({ 
-                success: true, 
-                message: "Thiết lập mã PIN thanh toán thành công!" 
+            await User.findByIdAndUpdate(userId, { 
+                paymentPassword: hashedPin, 
+                hasPaymentPin: true 
             });
+
+            res.status(200).json({ success: true, message: "Thiết lập mã PIN thành công!" });
         } catch (error) {
             res.status(500).json({ success: false, message: "Lỗi hệ thống: " + error.message });
         }
-    } // Đóng hàm setupPaymentPassword
+    }
+
+    // --- 2. ĐẶT LẠI MÃ PIN QUA OTP (Dùng cho Quên mã/Đổi mã) ---
+    resetPaymentPinByOTP = async (req, res) => {
+        try {
+            const { newPin } = req.body; // Firebase OTP đã verify thành công ở Frontend
+            const userId = req.user.id;
+
+            if (!/^\d{6}$/.test(newPin)) {
+                return res.status(400).json({ success: false, message: "Mã PIN mới phải bao gồm 6 chữ số" });
+            }
+
+            const salt = await UserService.generateSalt(10);
+            const hashedPin = await UserService.hashPassword(newPin, salt);
+
+            await User.findByIdAndUpdate(userId, { 
+                paymentPassword: hashedPin, 
+                hasPaymentPin: true 
+            });
+
+            res.status(200).json({ success: true, message: "Đổi mã PIN thanh toán thành công!" });
+        } catch (error) {
+            res.status(500).json({ success: false, message: "Lỗi hệ thống: " + error.message });
+        }
+    }
 } // Đóng class UserController
 
 export default new UserController();

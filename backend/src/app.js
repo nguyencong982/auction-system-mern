@@ -138,6 +138,7 @@ app.use('/api/withdrawals', withdrawalRoutes);
 app.get('/api/notifications/unread-count', auth, UserController.getUnreadCount);
 app.get('/api/notifications', auth, UserController.getNotifications);
 app.post('/api/user/deposit', auth, UserController.deposit);
+app.post('/api/auth/reset-payment-pin', auth, UserController.resetPaymentPinByOTP);
 
 // 7. Xử lý lỗi tập trung
 app.use((err, req, res, next) => {
