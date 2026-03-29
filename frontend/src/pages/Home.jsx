@@ -7,7 +7,6 @@ import { Link, useNavigate } from 'react-router-dom';
 import UserNavIcon from '../components/UserNavIcon';
 import CountdownTimer from '../components/CountdownTimer';
 import socket from '../socket';
-import SetupPaymentPin from './pages/Profile/SetupPaymentPin';
 
 const Home = () => {
   const [user, setUser] = useState(null);
