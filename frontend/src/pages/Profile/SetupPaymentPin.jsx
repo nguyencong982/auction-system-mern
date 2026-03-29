@@ -1,14 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom'; // 1. Import useNavigate
 import { RecaptchaVerifier, signInWithPhoneNumber } from 'firebase/auth';
 import { auth } from '../../firebase';
 import { toast } from 'react-toastify';
 import { resetPaymentPinByOTP, setupPaymentPin } from '../../api';
 
 const SetupPaymentPin = ({ user, onRefreshProfile }) => {
-  const navigate = useNavigate();
+  const navigate = useNavigate(); // 2. Khởi tạo navigate
 
-  // Khởi tạo step dựa trên props user truyền xuống từ Profile.jsx
   const [step, setStep] = useState(user?.hasPaymentPin ? 'MANAGEMENT' : 'CREATE_NEW');
   const [otp, setOtp] = useState('');
   const [newPin, setNewPin] = useState('');
@@ -16,18 +15,10 @@ const SetupPaymentPin = ({ user, onRefreshProfile }) => {
   const [loading, setLoading] = useState(false);
   const [confirmationResult, setConfirmationResult] = useState(null);
 
-  // 1. ĐỒNG BỘ TRẠNG THÁI: Quan trọng nhất để sửa lỗi của Công
   useEffect(() => {
-    // Ép kiểu boolean để kiểm tra chính xác
-    const hasPin = !!user?.hasPaymentPin;
-    if (hasPin) {
-      setStep('MANAGEMENT');
-    } else {
-      setStep('CREATE_NEW');
-    }
-  }, [user?.hasPaymentPin]); // Tự động chạy lại khi user ở Profile.jsx thay đổi
+    setStep(user?.hasPaymentPin ? 'MANAGEMENT' : 'CREATE_NEW');
+  }, [user?.hasPaymentPin]);
 
-  // 2. Khởi tạo Recaptcha (Giữ nguyên)
   useEffect(() => {
     const initRecaptcha = () => {
       if (!window.recaptchaVerifierPin) {
@@ -40,16 +31,14 @@ const SetupPaymentPin = ({ user, onRefreshProfile }) => {
     return () => {
       if (window.recaptchaVerifierPin) {
         window.recaptchaVerifierPin.clear();
-        delete window.recaptchaVerifierPin;
+        window.recaptchaVerifierPin = null;
       }
     };
   }, []);
 
-  // 3. Hàm gửi OTP (Giữ nguyên)
   const handleSendOtp = async () => {
     if (!user?.phone) return toast.error('Bạn chưa cập nhật số điện thoại!');
     setLoading(true);
-    toast.dismiss();
     try {
       const appVerifier = window.recaptchaVerifierPin;
       const formatPhone = user.phone.startsWith('0') ? `+84${user.phone.slice(1)}` : user.phone;
@@ -58,35 +47,25 @@ const SetupPaymentPin = ({ user, onRefreshProfile }) => {
       setStep('VERIFY_OTP');
       toast.success('Mã OTP đã được gửi!');
     } catch (error) {
-      toast.error('Gửi OTP thất bại. Thử lại sau!');
-      if (window.recaptchaVerifierPin) window.recaptchaVerifierPin.render();
+      toast.error('Gửi OTP thất bại. Hãy thử lại sau!');
     } finally {
       setLoading(false);
     }
   };
 
-  // 4. Thiết lập lần đầu
   const handleInitialSetup = async (e) => {
     e.preventDefault();
-    if (loading) return;
     if (newPin.length !== 6) return toast.error('Mã PIN phải gồm 6 chữ số');
 
-    toast.dismiss();
     setLoading(true);
-
     try {
       const res = await setupPaymentPin({ pin: newPin, password });
-
       if (res.data.success) {
         toast.success('🎉 Thiết lập mã PIN thành công!');
-        setPassword('');
-        setNewPin('');
+        if (onRefreshProfile) await onRefreshProfile();
 
-        // Cập nhật dữ liệu ở trang cha (Profile.jsx)
-        // Khi hàm này chạy, user.hasPaymentPin sẽ thành true -> useEffect ở trên sẽ tự chuyển step
-        if (onRefreshProfile) {
-          await onRefreshProfile();
-        }
+        // 3. Điều hướng về home sau 1.5s để user kịp nhìn thông báo thành công
+        setTimeout(() => navigate('/'), 1500);
       }
     } catch (error) {
       toast.error(error.response?.data?.message || 'Lỗi thiết lập mã PIN');
@@ -95,22 +74,23 @@ const SetupPaymentPin = ({ user, onRefreshProfile }) => {
     }
   };
 
-  // 5. Xác thực OTP và lưu PIN mới (Giữ nguyên)
   const handleVerifyAndSave = async (e) => {
     e.preventDefault();
-    if (loading) return;
+    if (otp.length !== 6) return toast.error('Vui lòng nhập đủ 6 số OTP');
+
     setLoading(true);
     try {
       await confirmationResult.confirm(otp);
       const res = await resetPaymentPinByOTP({ newPin });
       if (res.data.success) {
         toast.success('Cập nhật mã PIN thành công!');
-        setOtp('');
-        setNewPin('');
         if (onRefreshProfile) await onRefreshProfile();
+
+        // 4. Điều hướng về home
+        setTimeout(() => navigate('/'), 1500);
       }
     } catch (error) {
-      toast.error('Mã OTP không đúng');
+      toast.error('Mã OTP không đúng hoặc đã hết hạn');
     } finally {
       setLoading(false);
     }
@@ -119,12 +99,9 @@ const SetupPaymentPin = ({ user, onRefreshProfile }) => {
   return (
     <div className="mx-auto mt-4 max-w-md rounded-3xl border border-gray-100 bg-white p-8 shadow-lg">
       <div id="recaptcha-pin-container"></div>
-
       <div className="text-center">
         <h2 className="text-2xl font-black text-blue-600 uppercase">Mã PIN Thanh Toán</h2>
-        <p className="mt-2 text-sm text-gray-500 italic">
-          Bảo mật giao dịch cho tài khoản của Công
-        </p>
+        <p className="mt-2 text-sm text-gray-500 italic">Bảo mật giao dịch tài khoản</p>
       </div>
 
       <div className="mt-8">
@@ -137,7 +114,6 @@ const SetupPaymentPin = ({ user, onRefreshProfile }) => {
               <label className="ml-1 text-xs font-bold text-gray-500">MẬT KHẨU ĐĂNG NHẬP</label>
               <input
                 type="password"
-                placeholder="Nhập mật khẩu hiện tại"
                 className="mt-1 w-full rounded-xl border border-gray-200 p-4 outline-none focus:ring-2 focus:ring-blue-500"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
@@ -153,7 +129,7 @@ const SetupPaymentPin = ({ user, onRefreshProfile }) => {
                 className="mt-1 w-full rounded-xl border border-gray-200 p-4 text-center text-2xl font-bold tracking-[10px] outline-none focus:ring-2 focus:ring-blue-400"
                 value={newPin}
                 onChange={(e) => {
-                  if (/^[0-9]*$/.test(e.target.value)) setNewPin(e.target.value);
+                  if (/^\d*$/.test(e.target.value)) setNewPin(e.target.value);
                 }}
                 required
               />
@@ -173,9 +149,6 @@ const SetupPaymentPin = ({ user, onRefreshProfile }) => {
             <div className="flex animate-pulse justify-center text-5xl">🛡️</div>
             <div className="rounded-2xl border border-green-100 bg-green-50 p-4">
               <p className="text-sm font-bold text-green-700">Trạng thái: Đã kích hoạt bảo mật</p>
-              <p className="mt-1 text-[10px] text-green-600">
-                Mã PIN sẽ được yêu cầu khi Công rút tiền
-              </p>
             </div>
             <button
               onClick={handleSendOtp}
@@ -185,8 +158,8 @@ const SetupPaymentPin = ({ user, onRefreshProfile }) => {
               {loading ? 'ĐANG GỬI OTP...' : 'QUÊN HOẶC ĐỔI MÃ PIN'}
             </button>
             <p className="text-[11px] text-gray-400">
-              * Gửi về:{' '}
-              {user?.phone ? user.phone.replace(/(\d{3})\d{4}(\d{3})/, '$1****$2') : 'Chưa có SĐT'}
+              * OTP sẽ gửi về:{' '}
+              {user?.phone ? user.phone.replace(/(\d{3})\d{4}(\d{3})/, '$1****$2') : '...'}
             </p>
           </div>
         )}
@@ -194,25 +167,39 @@ const SetupPaymentPin = ({ user, onRefreshProfile }) => {
         {step === 'VERIFY_OTP' && (
           <form onSubmit={handleVerifyAndSave} className="space-y-4">
             <div className="mb-2 rounded-lg bg-blue-50 p-3 text-center">
-              <p className="text-xs font-bold text-blue-600">XÁC THỰC OTP QUA SMS</p>
+              <p className="text-xs font-bold text-blue-600">XÁC THỰC OTP & NHẬP PIN MỚI</p>
             </div>
             <input
               type="text"
+              placeholder="Nhập 6 số OTP"
               inputMode="numeric"
               maxLength={6}
-              className="w-full rounded-xl border-2 border-blue-400 p-4 text-center text-2xl font-bold tracking-[10px] outline-none"
+              className="w-full rounded-xl border-2 border-blue-400 p-4 text-center text-xl font-bold tracking-[10px] outline-none"
               value={otp}
               onChange={(e) => setOtp(e.target.value)}
+              required
+            />
+            <input
+              type="text"
+              placeholder="Mã PIN mới"
+              inputMode="numeric"
+              maxLength={6}
+              className="w-full rounded-xl border border-gray-200 p-4 text-center text-xl font-bold tracking-[10px] outline-none"
+              value={newPin}
+              onChange={(e) => {
+                if (/^\d*$/.test(e.target.value)) setNewPin(e.target.value);
+              }}
               required
             />
             <button
               type="submit"
               disabled={loading}
-              className="w-full rounded-xl bg-green-600 py-4 font-black text-white shadow-lg transition-all hover:bg-green-700 active:scale-95"
+              className="w-full rounded-xl bg-green-600 py-4 font-black text-white shadow-lg transition-all hover:bg-green-700"
             >
               {loading ? 'ĐANG LƯU...' : 'XÁC NHẬN ĐỔI MÃ'}
             </button>
             <button
+              type="button"
               onClick={() => setStep('MANAGEMENT')}
               className="w-full text-sm font-bold text-gray-400"
             >
