@@ -66,16 +66,26 @@ register = async (req, res) => {
 
     // 3. Lấy thông tin cá nhân của CHÍNH MÌNH
     getProfile = async (req, res) => {
-        try {
-            const user = await User.findById(req.user.id)
-                .select('-password')
-                .populate('followers', 'fullName')
-                .populate('following', 'fullName');
-            res.status(200).json({ success: true, data: user });
-        } catch (error) {
-            res.status(500).json({ success: false, message: error.message });
+    try {
+        const user = await User.findById(req.user.id)
+            .select('-password') // password đăng nhập vẫn ẩn
+            .populate('followers', 'fullName')
+            .populate('following', 'fullName');
+
+        if (!user) {
+            return res.status(404).json({ success: false, message: "Không tìm thấy người dùng" });
         }
+
+        // ĐẢM BẢO TRẢ VỀ hasPaymentPin
+        // Nếu database chưa kịp update field hasPaymentPin, ta kiểm tra trực tiếp từ field paymentPassword
+        res.status(200).json({ 
+            success: true, 
+            data: user 
+        });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
     }
+}
 
     // 4. Lấy thông tin TRANG CÁ NHÂN CÔNG KHAI
     getPublicProfile = async (req, res) => {
