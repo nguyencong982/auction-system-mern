@@ -287,6 +287,12 @@ const Home = () => {
               />
             </>
           )}
+          <MenuLink
+            icon="🔑"
+            label="Mã PIN thanh toán"
+            href="/settings/payment-pin"
+            isOpen={isSidebarOpen}
+          />
           <MenuLink icon="👤" label="Hồ sơ" href="/profile" isOpen={isSidebarOpen} />
           <MenuLink icon="📦" label="Kho hàng" href="/manage-products" isOpen={isSidebarOpen} />
           <MenuLink
