@@ -14,7 +14,6 @@ const Home = () => {
   const [myBids, setMyBids] = useState([]);
   const [loading, setLoading] = useState(true);
   const [unreadCount, setUnreadCount] = useState(0);
-  // Mặc định đóng sidebar trên mobile, mở trên desktop
   const [isSidebarOpen, setIsSidebarOpen] = useState(window.innerWidth > 768);
 
   const [filters, setFilters] = useState({
@@ -189,7 +188,7 @@ const Home = () => {
     <div className="relative flex min-h-screen flex-col overflow-hidden bg-gray-50 md:flex-row">
       <ToastContainer />
 
-      {/* VÍ BAY (FLOATING WALLET) */}
+      {/* VÍ BAY (FLOATING WALLET) - CẬP NHẬT THÊM NÚT PIN */}
       <div
         ref={dragRef}
         onMouseDown={handleMouseDown}
@@ -203,12 +202,12 @@ const Home = () => {
         className="fixed transition-shadow select-none hover:shadow-2xl"
       >
         <div className="relative transform rounded-2xl border border-blue-200 bg-gradient-to-r from-blue-500 to-indigo-500 px-4 py-2 text-center shadow-lg transition-all duration-300 hover:scale-105 md:px-6 md:py-3">
-          {/* Nút cài đặt PIN nhỏ ở góc ví */}
+          {/* Nút thiết lập mã PIN nhanh trên Ví */}
           <button
-            onMouseDown={(e) => e.stopPropagation()} // Ngăn chặn kéo ví khi bấm nút
+            onMouseDown={(e) => e.stopPropagation()} // Quan trọng: Ngừng sự kiện kéo khi click vào nút
             onClick={() => navigate('/settings/payment-pin')}
-            className="absolute -top-2 -right-2 rounded-full bg-white p-1 text-blue-600 shadow-md transition-colors hover:bg-blue-50"
-            title="Thiết lập mã PIN"
+            className="group/pin absolute -top-3 -right-3 flex h-8 w-8 items-center justify-center rounded-full bg-white text-blue-600 shadow-md transition-all hover:bg-blue-600 hover:text-white"
+            title="Cài đặt mã PIN"
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -222,6 +221,9 @@ const Home = () => {
                 clipRule="evenodd"
               />
             </svg>
+            <span className="absolute -bottom-8 hidden rounded bg-gray-800 px-2 py-1 text-[10px] text-white group-hover/pin:block">
+              PIN
+            </span>
           </button>
 
           <span className="text-[8px] font-semibold tracking-wider text-blue-100 uppercase md:text-[10px]">
@@ -232,15 +234,6 @@ const Home = () => {
           </p>
         </div>
       </div>
-
-      {/* --- SIDEBAR --- */}
-      {/* Overlay cho mobile khi mở sidebar */}
-      {isSidebarOpen && (
-        <div
-          className="fixed inset-0 z-[40] bg-black/50 md:hidden"
-          onClick={() => setIsSidebarOpen(false)}
-        />
-      )}
 
       <aside
         className={`${
@@ -353,9 +346,7 @@ const Home = () => {
         </div>
       </aside>
 
-      {/* --- MAIN CONTENT --- */}
       <main className="h-screen flex-1 overflow-y-auto p-4 md:p-8">
-        {/* Nút mở sidebar cho mobile */}
         <button
           onClick={() => setIsSidebarOpen(true)}
           className="mb-4 rounded-lg bg-white p-2 text-blue-600 shadow-sm md:hidden"
@@ -386,7 +377,7 @@ const Home = () => {
           <UserNavIcon user={user} />
         </header>
 
-        {/* --- TOOLBAR: SEARCH & FILTERS --- */}
+        {/* TOOLBAR */}
         <div className="mb-8 grid grid-cols-1 gap-4 rounded-2xl border border-gray-100 bg-white p-4 shadow-sm sm:grid-cols-2 md:rounded-3xl md:p-6 lg:grid-cols-4">
           <div className="relative">
             <span className="absolute inset-y-0 left-4 flex items-center text-gray-400">🔍</span>
@@ -398,7 +389,6 @@ const Home = () => {
               onChange={(e) => setFilters({ ...filters, search: e.target.value })}
             />
           </div>
-
           <select
             className="w-full rounded-xl border border-gray-100 bg-gray-50 px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-blue-500"
             value={filters.category}
@@ -411,7 +401,6 @@ const Home = () => {
             <option value="Gia dụng">🏠 Gia dụng</option>
             <option value="Khác">📦 Khác</option>
           </select>
-
           <div className="flex items-center gap-2">
             <input
               type="number"
@@ -428,7 +417,6 @@ const Home = () => {
               onChange={(e) => setFilters({ ...filters, maxPrice: e.target.value })}
             />
           </div>
-
           <select
             className="w-full rounded-xl border border-gray-100 bg-gray-50 px-4 py-3 text-sm font-medium outline-none focus:ring-2 focus:ring-blue-500"
             value={filters.sort}
@@ -448,7 +436,6 @@ const Home = () => {
             : 'Sàn đấu giá trực tuyến'}
         </h2>
 
-        {/* Lưới sản phẩm - Tự động nhảy cột */}
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3">
           {products?.map((product) => (
             <div
@@ -462,7 +449,6 @@ const Home = () => {
                   </div>
                 </div>
               )}
-
               <div className="relative mb-4 h-40 overflow-hidden rounded-2xl bg-gray-100 md:h-48">
                 <img
                   src={product.imageUrl || 'https://via.placeholder.com/300'}
@@ -475,7 +461,6 @@ const Home = () => {
                   {product.status === 'active' ? '🔥 LIVE' : '🔒 END'}
                 </div>
               </div>
-
               <div className="mb-3 flex items-center gap-2">
                 <div className="h-6 w-6 overflow-hidden rounded-full bg-blue-50">
                   {product.owner?.avatar ? (
@@ -493,11 +478,9 @@ const Home = () => {
                   {product.owner?.fullName || 'User'}
                 </span>
               </div>
-
               <h3 className="mb-2 truncate text-sm font-bold text-gray-800 md:text-base">
                 {product.title}
               </h3>
-
               <div className="mt-4 flex items-end justify-between">
                 <div>
                   <p className="text-[9px] font-bold text-gray-400 uppercase">Giá</p>

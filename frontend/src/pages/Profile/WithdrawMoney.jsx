@@ -30,6 +30,7 @@ const WithdrawMoney = () => {
   };
 
   // Bước 2: Xác nhận rút tiền với mã PIN
+  // Bước 2: Xác nhận rút tiền với mã PIN
   const handleConfirmWithdraw = async () => {
     if (pin.length !== 6) {
       return toast.error('Vui lòng nhập đủ 6 số PIN');
@@ -37,22 +38,21 @@ const WithdrawMoney = () => {
 
     setLoading(true);
     try {
-      // SỬ DỤNG HÀM TỪ API.JS: Gửi kèm PIN vào request body
+      // SỬA TẠI ĐÂY: Đổi 'paymentPin' thành 'pin' để khớp với Backend
       const res = await createWithdrawalRequest({
         ...formData,
-        paymentPin: pin, // Key này phải khớp với requirePin middleware ở Backend
+        pin: pin, // Backend (withdrawalController) đang đợi biến có tên là 'pin'
       });
 
       if (res.data.success) {
         toast.success('Yêu cầu rút tiền đã được gửi! Chờ Admin phê duyệt.');
         setShowPinModal(false);
-        // Chuyển hướng về trang chủ hoặc lịch sử rút tiền sau 1.5s
         setTimeout(() => navigate('/profile'), 1500);
       }
     } catch (error) {
-      // Xử lý lỗi mã PIN sai hoặc số dư không đủ từ Backend
+      // Backend trả về message gì thì toast sẽ hiển thị message đó
       toast.error(error.response?.data?.message || 'Mã PIN không đúng hoặc lỗi hệ thống');
-      setPin(''); // Xóa mã PIN cũ để người dùng nhập lại
+      setPin('');
     } finally {
       setLoading(false);
     }
