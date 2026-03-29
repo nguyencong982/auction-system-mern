@@ -21,7 +21,7 @@ import SoldProducts from './pages/Product/SoldProducts';
 import WithdrawMoney from './pages/Profile/WithdrawMoney';
 import AdminWithdrawal from './pages/Admin/AdminWithdrawal';
 import AdminDeposit from './pages/Admin/AdminDeposit';
-
+import SetupPaymentPin from './pages/Profile/SetupPaymentPin';
 // Component tự động cuộn lên đầu trang khi đổi route
 const ScrollToTop = () => {
   const { pathname } = useLocation();
