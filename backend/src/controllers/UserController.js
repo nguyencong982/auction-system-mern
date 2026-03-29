@@ -253,41 +253,80 @@ register = async (req, res) => {
 
     // 11. Cập nhật Ảnh đại diện & Ảnh bìa
     // 11. Cập nhật Ảnh đại diện & Ảnh bìa
-updateProfileImage = async (req, res) => {
-    try {
-        if (!req.file) {
-            return res.status(400).json({ success: false, message: "Vui lòng chọn ảnh" });
+// 11. Cập nhật Ảnh đại diện & Ảnh bìa
+    updateProfileImage = async (req, res) => {
+        try {
+            if (!req.file) {
+                return res.status(400).json({ success: false, message: "Vui lòng chọn ảnh" });
+            }
+
+            const userId = req.user.id;
+            const imageUrl = req.file.path; 
+
+            const updateData = {};
+            if (req.file.fieldname === 'avatar') {
+                updateData.avatar = imageUrl;
+            } else if (req.file.fieldname === 'cover') {
+                updateData.cover = imageUrl;
+            }
+
+            const updatedUser = await User.findByIdAndUpdate(
+                userId,
+                updateData,
+                { new: true }
+            ).select('-password');
+
+            res.status(200).json({ 
+                success: true, 
+                message: "Cập nhật ảnh thành công!", 
+                data: updatedUser 
+            });
+        } catch (error) {
+            res.status(500).json({ success: false, message: "Lỗi upload: " + error.message });
         }
+    } // Đóng hàm updateProfileImage
 
-        const userId = req.user.id;
-        
-        // SỬA TẠI ĐÂY: Khi dùng Cloudinary, link nằm trong req.file.path
-        // Không dùng `/${req.file.filename}` vì nó sẽ biến thành link localhost
-        const imageUrl = req.file.path; 
-        
-        const updateData = {};
-        if (req.file.fieldname === 'avatar') {
-            updateData.avatar = imageUrl;
-        } else if (req.file.fieldname === 'cover') {
-            updateData.cover = imageUrl;
+    // --- MỚI: THIẾT LẬP MÃ PIN THANH TOÁN ---
+    setupPaymentPassword = async (req, res) => {
+        try {
+            const { pin, password } = req.body;
+            const userId = req.user.id;
+
+            if (!pin || !password) {
+                return res.status(400).json({ 
+                    success: false, 
+                    message: "Vui lòng nhập đầy đủ mã PIN và mật khẩu xác nhận" 
+                });
+            }
+
+            const user = await User.findById(userId).select('+password');
+            if (!user) {
+                return res.status(404).json({ success: false, message: "Người dùng không tồn tại" });
+            }
+
+            const isMatch = await UserService.comparePassword(password, user.password); 
+            
+            if (!isMatch) {
+                return res.status(400).json({ success: false, message: "Mật khẩu đăng nhập không chính xác" });
+            }
+
+            if (!/^\d{6}$/.test(pin)) {
+                return res.status(400).json({ success: false, message: "Mã PIN phải bao gồm 6 chữ số" });
+            }
+
+            const salt = await UserService.generateSalt(10); 
+            const hashedPin = await UserService.hashPassword(pin, salt);
+
+            await User.findByIdAndUpdate(userId, { paymentPassword: hashedPin });
+
+            res.status(200).json({ 
+                success: true, 
+                message: "Thiết lập mã PIN thanh toán thành công!" 
+            });
+        } catch (error) {
+            res.status(500).json({ success: false, message: "Lỗi hệ thống: " + error.message });
         }
-
-        const updatedUser = await User.findByIdAndUpdate(
-            userId,
-            updateData,
-            { new: true }
-        ).select('-password');
-
-        res.status(200).json({ 
-            success: true, 
-            message: "Cập nhật ảnh thành công!", 
-            // Trả về data đã có link https://res.cloudinary.com/...
-            data: updatedUser 
-        });
-    } catch (error) {
-        res.status(500).json({ success: false, message: "Lỗi upload: " + error.message });
-    }
-}
-}
+    } // Đóng hàm setupPaymentPassword
+} // Đóng class UserController
 
 export default new UserController();

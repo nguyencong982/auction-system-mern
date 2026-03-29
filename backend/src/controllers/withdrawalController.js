@@ -1,13 +1,38 @@
 import Withdrawal from '../models/Withdrawal.js';
 import User from '../models/User.js';
+import UserService from '../services/UserService.js'; // Nhớ import service để dùng hàm comparePassword
 
 // 1. Người dùng gửi yêu cầu rút tiền
 export const createWithdrawal = async (req, res) => {
     try {
-        const { amount, bankName, accountNumber, accountName } = req.body;
-        const userId = req.user._id;
+        const { amount, bankName, accountNumber, accountName, pin } = req.body;
+        const userId = req.user._id || req.user.id;
 
-        const user = await User.findById(userId);
+        // Tìm user và lấy kèm trường paymentPassword (vì mặc định select: false)
+        const user = await User.findById(userId).select('+paymentPassword balance');
+        
+        if (!user) {
+            return res.status(404).json({ success: false, message: "Không tìm thấy người dùng!" });
+        }
+
+        // --- KIỂM TRA MÃ PIN ---
+        if (!user.paymentPassword) {
+            return res.status(400).json({ 
+                success: false, 
+                message: "Bạn chưa thiết lập mã PIN thanh toán. Vui lòng cài đặt trong hồ sơ!" 
+            });
+        }
+
+        if (!pin) {
+            return res.status(400).json({ success: false, message: "Vui lòng nhập mã PIN để rút tiền" });
+        }
+
+        const isPinValid = await UserService.comparePassword(pin, user.paymentPassword);
+        if (!isPinValid) {
+            return res.status(400).json({ success: false, message: "Mã PIN thanh toán không chính xác!" });
+        }
+
+        // --- KIỂM TRA SỐ DƯ ---
         if (user.balance < amount) {
             return res.status(400).json({ success: false, message: "Số dư không đủ để rút!" });
         }
@@ -22,13 +47,17 @@ export const createWithdrawal = async (req, res) => {
             status: 'pending'
         });
 
-        // TRỪ TIỀN NGAY LẬP TỨC (Tạm giữ)
+        // TRỪ TIỀN TẠM GIỮ
         user.balance -= amount;
         await user.save();
 
-        res.status(201).json({ success: true, data: withdrawal });
+        res.status(201).json({ 
+            success: true, 
+            message: "Gửi yêu cầu rút tiền thành công!",
+            data: withdrawal 
+        });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        res.status(500).json({ success: false, message: "Lỗi hệ thống: " + error.message });
     }
 };
 
@@ -42,7 +71,7 @@ export const getMyWithdrawals = async (req, res) => {
     }
 };
 
-// 3. Admin lấy TẤT CẢ yêu cầu rút tiền (Hàm đang bị thiếu đây nè!)
+// 3. Admin lấy TẤT CẢ yêu cầu rút tiền
 export const getAllWithdrawals = async (req, res) => {
     try {
         // Populate để xem thông tin user rút tiền là ai
@@ -69,8 +98,10 @@ export const approveWithdrawal = async (req, res) => {
         if (status === 'failed') {
             // Nếu từ chối -> HOÀN TIỀN lại cho User
             const user = await User.findById(withdrawal.userId);
-            user.balance += withdrawal.amount;
-            await user.save();
+            if (user) {
+                user.balance += withdrawal.amount;
+                await user.save();
+            }
         }
 
         withdrawal.status = status;

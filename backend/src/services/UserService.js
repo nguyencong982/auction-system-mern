@@ -10,7 +10,6 @@ class UserService {
             throw new Error('Email này đã được sử dụng!');
         }
 
-        // Kiểm tra số điện thoại đã tồn tại chưa
         if (userData.phone) {
             const phoneExists = await User.findOne({ phone: userData.phone });
             if (phoneExists) {
@@ -21,7 +20,6 @@ class UserService {
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(userData.password, salt);
 
-        // Sử dụng spread operator (...) lấy toàn bộ thông tin từ userData
         const newUser = new User({
             ...userData,
             password: hashedPassword
@@ -42,14 +40,12 @@ class UserService {
             throw new Error('Mật khẩu không chính xác!');
         }
 
-         // UserService.js
-const token = jwt.sign(
-    { id: user._id, email: user.email }, 
-    process.env.JWT_SECRET, // Dùng biến môi trường cho đồng bộ với Middleware
-    { expiresIn: '24h' }
-);
+        const token = jwt.sign(
+            { id: user._id, email: user.email }, 
+            process.env.JWT_SECRET, 
+            { expiresIn: '24h' }
+        );
 
-        // Trả về thông tin cần thiết cho Frontend
         return {
             user: {
                 id: user._id,
@@ -65,20 +61,17 @@ const token = jwt.sign(
         };
     }
 
-    // 3. Phương thức Đặt lại mật khẩu bằng số điện thoại (Mới thêm)
+    // 3. Phương thức Đặt lại mật khẩu bằng số điện thoại
     async resetPasswordByPhone(phone, newPassword) {
-        // Tìm người dùng theo số điện thoại
         const user = await User.findOne({ phone: phone });
         
         if (!user) {
             throw new Error('Số điện thoại này chưa được đăng ký tài khoản!');
         }
 
-        // Băm mật khẩu mới
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(newPassword, salt);
 
-        // Cập nhật và lưu lại
         user.password = hashedPassword;
         await user.save();
 
@@ -86,6 +79,23 @@ const token = jwt.sign(
             success: true, 
             message: "Mật khẩu của bạn đã được thay đổi thành công!" 
         };
+    }
+
+    // --- CÁC HÀM BỔ TRỢ MỚI CHO MÃ PIN (PAYMENT PASSWORD) ---
+
+    // Hàm tạo Salt (dùng chung cho cả Pass và PIN)
+    async generateSalt(rounds = 10) {
+        return await bcrypt.genSalt(rounds);
+    }
+
+    // Hàm băm (dùng chung cho cả Pass và PIN)
+    async hashPassword(plainText, salt) {
+        return await bcrypt.hash(plainText, salt);
+    }
+
+    // Hàm so sánh (dùng kiểm tra mã PIN khi rút tiền)
+    async comparePassword(plainText, hashedText) {
+        return await bcrypt.compare(plainText, hashedText);
     }
 }
 

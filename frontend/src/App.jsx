@@ -162,6 +162,15 @@ function App() {
             }
           />
 
+          <Route
+            path="/settings/payment-pin"
+            element={
+              <PrivateRoute>
+                <SetupPaymentPin />
+              </PrivateRoute>
+            }
+          />
+
           {/* --- 404 HANDLER --- */}
           {/* Nếu gõ đường dẫn linh tinh, tự động đá về trang chủ (PrivateRoute sẽ kiểm tra login tại đây) */}
           <Route path="*" element={<Navigate to="/" replace />} />

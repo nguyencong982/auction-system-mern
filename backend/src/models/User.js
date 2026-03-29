@@ -33,9 +33,10 @@ const userSchema = new mongoose.Schema({
 
     // --- BẢO MẬT VÍ (MÃ PIN / MẬT KHẨU THANH TOÁN) ---
     paymentPassword: {
-        type: String,
-        default: "" // Sẽ được băm (hash) khi người dùng thiết lập
-    },
+    type: String,
+    default: "", 
+    select: false // Thêm dòng này để bảo mật tốt hơn
+},
 
     // --- HÌNH ẢNH ---
     avatar: { 

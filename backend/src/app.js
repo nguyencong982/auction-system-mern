@@ -109,6 +109,7 @@ app.post('/api/auth/login', UserController.login);
 app.post('/api/auth/reset-password', UserController.resetPassword); 
 app.get('/api/auth/profile', auth, UserController.getProfile); 
 app.put('/api/auth/profile', auth, UserController.updateProfile); 
+app.post('/api/auth/setup-payment-pin', auth, UserController.setupPaymentPassword);
 
 // B. Routes Người dùng
 app.get('/api/users/profile/:id', auth, UserController.getPublicProfile);
