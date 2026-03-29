@@ -26,7 +26,12 @@ const Profile = () => {
       setLoadingFetch(true);
       const res = await API.get('/auth/profile');
       if (res.data.success) {
+        // Kiểm tra log này ở Console F12
+        console.log('Dữ liệu User từ Server:', res.data.data);
         setUser(res.data.data);
+
+        // Cập nhật lại LocalStorage để đồng bộ toàn bộ App
+        localStorage.setItem('user', JSON.stringify(res.data.data));
       }
     } catch (error) {
       console.error('Lỗi lấy thông tin', error);
