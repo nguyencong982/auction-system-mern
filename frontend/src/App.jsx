@@ -1,5 +1,6 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import API from './api'; // Đảm bảo bạn đã có file cấu hình axios/api
 
 // Import Pages
 import Login from './pages/Auth/Login';
@@ -17,11 +18,12 @@ import FollowList from './pages/Profile/FollowList';
 import MyBids from './pages/Profile/MyBids';
 import SoldProducts from './pages/Product/SoldProducts';
 
-// --- IMPORT 2 TRANG MỚI ---
+// --- IMPORT TRANG MỚI ---
 import WithdrawMoney from './pages/Profile/WithdrawMoney';
 import AdminWithdrawal from './pages/Admin/AdminWithdrawal';
 import AdminDeposit from './pages/Admin/AdminDeposit';
 import SetupPaymentPin from './pages/Profile/SetupPaymentPin';
+
 // Component tự động cuộn lên đầu trang khi đổi route
 const ScrollToTop = () => {
   const { pathname } = useLocation();
@@ -34,35 +36,54 @@ const ScrollToTop = () => {
 // Component bảo vệ Route (Yêu cầu đăng nhập)
 const PrivateRoute = ({ children }) => {
   const token = localStorage.getItem('token');
-  // Nếu không có token, Navigate ngay lập tức về trang login
   return token ? children : <Navigate to="/login" replace />;
 };
 
 function App() {
+  const [user, setUser] = useState(null);
+
+  // Hàm fetch thông tin user dùng chung cho toàn app
+  const fetchUserData = async () => {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    try {
+      const res = await API.get('/auth/profile');
+      if (res.data.success) {
+        setUser(res.data.data);
+        // Lưu vào localStorage để các component khác có thể lấy nhanh nếu cần
+        localStorage.setItem('user', JSON.stringify(res.data.data));
+      }
+    } catch (error) {
+      console.error('Lỗi đồng bộ dữ liệu User:', error);
+    }
+  };
+
+  useEffect(() => {
+    fetchUserData();
+  }, []);
+
   return (
     <Router>
       <ScrollToTop />
       <div className="min-h-screen bg-gray-100 font-sans text-gray-900 antialiased">
         <Routes>
-          {/* --- AUTH ROUTES (Công khai) --- */}
+          {/* --- AUTH ROUTES --- */}
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
 
-          {/* --- PUBLIC ROUTES (Chỉ những trang thực sự muốn cho xem không cần login) --- */}
-          {/* Lưu ý: Nếu muốn bắt đăng nhập mới xem được chi tiết SP, hãy bọc ProductDetail vào PrivateRoute */}
+          {/* --- PUBLIC ROUTES --- */}
           <Route path="/product/:id" element={<ProductDetail />} />
           <Route path="/profile/:id" element={<UserProfile />} />
           <Route path="/sold-products" element={<SoldProducts />} />
 
-          {/* --- PROTECTED ROUTES (Cần login) --- */}
-
-          {/* Chuyển Home vào PrivateRoute để dứt điểm lỗi vào thẳng trang chủ */}
+          {/* --- PROTECTED ROUTES --- */}
           <Route
             path="/"
             element={
               <PrivateRoute>
-                <Home />
+                <Home user={user} />
               </PrivateRoute>
             }
           />
@@ -70,7 +91,7 @@ function App() {
             path="/home"
             element={
               <PrivateRoute>
-                <Home />
+                <Home user={user} />
               </PrivateRoute>
             }
           />
@@ -107,14 +128,16 @@ function App() {
               </PrivateRoute>
             }
           />
+
           <Route
             path="/profile"
             element={
               <PrivateRoute>
-                <Profile />
+                <Profile user={user} onRefresh={fetchUserData} />
               </PrivateRoute>
             }
           />
+
           <Route
             path="/deposit"
             element={
@@ -131,13 +154,11 @@ function App() {
               </PrivateRoute>
             }
           />
-
-          {/* --- ROUTE RÚT TIỀN (USER) --- */}
           <Route
             path="/withdraw"
             element={
               <PrivateRoute>
-                <WithdrawMoney />
+                <WithdrawMoney user={user} />
               </PrivateRoute>
             }
           />
@@ -151,8 +172,6 @@ function App() {
               </PrivateRoute>
             }
           />
-
-          {/* --- ROUTE QUẢN LÝ RÚT TIỀN (ADMIN) --- */}
           <Route
             path="/admin/withdrawal"
             element={
@@ -162,17 +181,18 @@ function App() {
             }
           />
 
+          {/* --- SETTINGS --- */}
           <Route
             path="/settings/payment-pin"
             element={
               <PrivateRoute>
-                <SetupPaymentPin />
+                {/* Truyền user và hàm refresh vào đây để SetupPaymentPin nhận được số điện thoại */}
+                <SetupPaymentPin user={user} onRefreshProfile={fetchUserData} />
               </PrivateRoute>
             }
           />
 
           {/* --- 404 HANDLER --- */}
-          {/* Nếu gõ đường dẫn linh tinh, tự động đá về trang chủ (PrivateRoute sẽ kiểm tra login tại đây) */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </div>

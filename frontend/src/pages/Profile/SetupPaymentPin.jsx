@@ -52,17 +52,32 @@ const SetupPaymentPin = ({ user, onRefreshProfile }) => {
 
   // 3. Gửi OTP qua số điện thoại
   const handleSendOtp = async () => {
-    if (!user?.phone) return toast.error('Bạn chưa cập nhật số điện thoại!');
+    // 1. Ưu tiên lấy từ prop, nếu không có thì lấy từ LocalStorage
+    const userData = user || JSON.parse(localStorage.getItem('user'));
+    const phoneNumber = userData?.phone;
+
+    if (!phoneNumber) {
+      return toast.error(
+        'Hệ thống chưa nhận diện được số điện thoại. Vui lòng cập nhật ở trang Hồ sơ!'
+      );
+    }
+
     setLoading(true);
     try {
       const appVerifier = window.recaptchaVerifierPin;
-      const formatPhone = user.phone.startsWith('0') ? `+84${user.phone.slice(1)}` : user.phone;
+      // 2. Chuẩn hóa số điện thoại để Firebase không lỗi
+      const cleanPhone = phoneNumber.trim();
+      const formatPhone = cleanPhone.startsWith('0') ? `+84${cleanPhone.slice(1)}` : cleanPhone;
+
+      console.log('Đang gửi OTP đến:', formatPhone); // Để Công debug trong F12
+
       const confirmation = await signInWithPhoneNumber(auth, formatPhone, appVerifier);
       setConfirmationResult(confirmation);
       setStep('VERIFY_OTP');
       toast.success('Mã OTP đã được gửi!');
     } catch (error) {
-      toast.error('Gửi OTP thất bại. Hãy thử lại sau!');
+      console.error('Firebase Error:', error);
+      toast.error('Gửi OTP thất bại. Hãy kiểm tra cấu hình Firebase hoặc Domain!');
     } finally {
       setLoading(false);
     }
