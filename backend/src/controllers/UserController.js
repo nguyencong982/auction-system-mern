@@ -3,6 +3,7 @@ import Notification from '../models/Notification.js';
 import User from '../models/User.js';
 import Product from '../models/Product.js';
 
+
 class UserController {
     // 1. Đăng ký tài khoản
     register = async (req, res) => {
