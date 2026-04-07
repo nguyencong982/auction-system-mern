@@ -3,15 +3,27 @@ import { getPendingProducts, approveProduct } from '../../api';
 import { toast } from 'react-toastify';
 
 const AdminApproveProduct = () => {
+  // Khởi tạo là mảng rỗng để tránh lỗi .length khi chưa load xong dữ liệu
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
 
   const loadProducts = async () => {
     try {
+      setLoading(true);
       const res = await getPendingProducts();
-      setProducts(res.data.products);
+
+      // Kiểm tra các cấu trúc dữ liệu có thể có từ Backend
+      const incomingData = res.data?.products || res.data?.data || res.data;
+
+      if (Array.isArray(incomingData)) {
+        setProducts(incomingData);
+      } else {
+        setProducts([]);
+      }
     } catch (error) {
+      console.error('Lỗi khi tải sản phẩm:', error);
       toast.error('Không thể tải danh sách chờ duyệt');
+      setProducts([]);
     } finally {
       setLoading(false);
     }
@@ -22,63 +34,109 @@ const AdminApproveProduct = () => {
   }, []);
 
   const handleAction = async (id, status) => {
-    if (
-      !window.confirm(
-        `Bạn có chắc chắn muốn ${status === 'active' ? 'duyệt' : 'từ chối'} sản phẩm này?`
-      )
-    )
-      return;
+    const actionText = status === 'active' ? 'duyệt' : 'từ chối';
+    if (!window.confirm(`Bạn có chắc chắn muốn ${actionText} sản phẩm này?`)) return;
 
     try {
       await approveProduct(id, status);
-      toast.success(status === 'active' ? 'Đã duyệt sản phẩm!' : 'đã từ chối sản phẩm!');
-      // Cập nhật lại danh sách tại chỗ
-      setProducts(products.filter((p) => p._id !== id));
+      toast.success(status === 'active' ? 'Đã duyệt sản phẩm thành công!' : 'Đã từ chối sản phẩm!');
+
+      // Cập nhật State tại chỗ để biến mất khỏi danh sách mà không cần reload trang
+      setProducts((prevProducts) => prevProducts.filter((p) => p._id !== id));
     } catch (error) {
-      toast.error('Thao tác thất bại');
+      toast.error('Thao tác thất bại. Vui lòng thử lại.');
     }
   };
 
-  if (loading) return <div className="p-10 text-center">Đang tải dữ liệu...</div>;
+  // Hàm helper để xử lý URL hình ảnh (phòng trường hợp dùng đường dẫn tương đối)
+  const getImageUrl = (path) => {
+    if (!path) return 'https://via.placeholder.com/150';
+    if (path.startsWith('http')) return path;
+    const BACKEND_URL =
+      import.meta.env.MODE === 'development'
+        ? 'http://localhost:5000'
+        : 'https://auction-system-mern-xeyx.onrender.com';
+    return `${BACKEND_URL}/uploads/${path}`;
+  };
+
+  if (loading) {
+    return (
+      <div className="flex min-h-[400px] items-center justify-center">
+        <div className="h-10 w-10 animate-spin rounded-full border-4 border-blue-600 border-t-transparent"></div>
+        <span className="ml-3 font-medium text-gray-600">Đang tải danh sách chờ duyệt...</span>
+      </div>
+    );
+  }
 
   return (
-    <div className="p-6">
-      <h2 className="mb-6 text-2xl font-bold">Phê duyệt sản phẩm ({products.length})</h2>
+    <div className="mx-auto max-w-6xl p-4 md:p-6">
+      <div className="mb-8 flex items-center justify-between">
+        <h2 className="text-2xl font-bold text-gray-800">
+          Phê duyệt sản phẩm
+          <span className="ml-2 rounded-full bg-blue-100 px-3 py-1 text-sm text-blue-600">
+            {products?.length || 0}
+          </span>
+        </h2>
+        <button onClick={loadProducts} className="text-sm text-blue-600 hover:underline">
+          Làm mới 🔄
+        </button>
+      </div>
 
-      {products.length === 0 ? (
-        <div className="rounded bg-gray-100 p-10 text-center">
-          Không có sản phẩm nào đang chờ duyệt.
+      {!products || products.length === 0 ? (
+        <div className="flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-gray-200 bg-white py-20">
+          <span className="mb-4 text-5xl">📦</span>
+          <p className="text-lg font-medium text-gray-500">
+            Hiện không có sản phẩm nào đang chờ duyệt.
+          </p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 gap-4">
+        <div className="grid grid-cols-1 gap-6">
           {products.map((product) => (
             <div
               key={product._id}
-              className="flex items-center rounded-lg border bg-white p-4 shadow-sm"
+              className="group flex flex-col items-start rounded-2xl border border-gray-100 bg-white p-5 shadow-sm transition-all hover:shadow-md md:flex-row md:items-center"
             >
-              <img
-                src={product.image}
-                alt={product.title}
-                className="mr-4 h-24 w-24 rounded object-cover"
-              />
-              <div className="flex-1">
-                <h3 className="text-lg font-bold">{product.title}</h3>
-                <p className="line-clamp-1 text-sm text-gray-600">{product.description}</p>
-                <p className="mt-1 font-semibold text-blue-600">
-                  Giá khởi điểm: {product.initialPrice?.toLocaleString()} VNĐ
-                </p>
-                <span className="text-xs text-gray-400">Người đăng: {product.owner?.fullName}</span>
+              <div className="relative mb-4 h-32 w-full flex-shrink-0 overflow-hidden rounded-xl md:mb-0 md:h-28 md:w-28">
+                <img
+                  src={getImageUrl(product.imageUrl || product.image)}
+                  alt={product.title}
+                  className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-110"
+                />
               </div>
-              <div className="flex flex-col gap-2">
+
+              <div className="flex-1 md:ml-6">
+                <div className="mb-1 flex items-center gap-2">
+                  <span className="rounded-md bg-amber-50 px-2 py-0.5 text-[10px] font-bold text-amber-600 uppercase">
+                    Chờ duyệt
+                  </span>
+                  <span className="text-xs text-gray-400">ID: {product._id.slice(-6)}</span>
+                </div>
+                <h3 className="line-clamp-1 text-lg font-bold text-gray-800">{product.title}</h3>
+                <p className="mt-1 line-clamp-2 text-sm text-gray-500">{product.description}</p>
+
+                <div className="mt-3 flex flex-wrap items-center gap-x-6 gap-y-2">
+                  <p className="font-bold text-blue-600">
+                    Khởi điểm: {Number(product.initialPrice || 0).toLocaleString()}đ
+                  </p>
+                  <p className="text-sm text-gray-600">
+                    👤{' '}
+                    <span className="font-medium text-gray-800">
+                      {product.owner?.fullName || 'Ẩn danh'}
+                    </span>
+                  </p>
+                </div>
+              </div>
+
+              <div className="mt-4 flex w-full gap-3 border-t border-gray-50 pt-4 md:mt-0 md:w-auto md:flex-col md:border-0 md:pt-0 md:pl-6">
                 <button
                   onClick={() => handleAction(product._id, 'active')}
-                  className="rounded bg-green-500 px-4 py-2 text-sm text-white transition hover:bg-green-600"
+                  className="flex-1 rounded-xl bg-green-600 px-6 py-2.5 text-sm font-bold text-white shadow-sm transition-all hover:bg-green-700 active:scale-95 md:w-32"
                 >
                   Duyệt đăng
                 </button>
                 <button
                   onClick={() => handleAction(product._id, 'rejected')}
-                  className="rounded bg-red-500 px-4 py-2 text-sm text-white transition hover:bg-red-600"
+                  className="flex-1 rounded-xl border border-red-100 bg-white px-6 py-2.5 text-sm font-bold text-red-600 transition-all hover:bg-red-50 active:scale-95 md:w-32"
                 >
                   Từ chối
                 </button>
