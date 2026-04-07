@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { getPendingProducts, approveProduct } from '../../api';
 import { toast } from 'react-toastify';
+import { Link } from 'react-router-dom'; // 1. Import Link
 
 const AdminApproveProduct = () => {
-  // Khởi tạo là mảng rỗng để tránh lỗi .length khi chưa load xong dữ liệu
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -11,8 +11,6 @@ const AdminApproveProduct = () => {
     try {
       setLoading(true);
       const res = await getPendingProducts();
-
-      // Kiểm tra các cấu trúc dữ liệu có thể có từ Backend
       const incomingData = res.data?.products || res.data?.data || res.data;
 
       if (Array.isArray(incomingData)) {
@@ -40,15 +38,12 @@ const AdminApproveProduct = () => {
     try {
       await approveProduct(id, status);
       toast.success(status === 'active' ? 'Đã duyệt sản phẩm thành công!' : 'Đã từ chối sản phẩm!');
-
-      // Cập nhật State tại chỗ để biến mất khỏi danh sách mà không cần reload trang
       setProducts((prevProducts) => prevProducts.filter((p) => p._id !== id));
     } catch (error) {
       toast.error('Thao tác thất bại. Vui lòng thử lại.');
     }
   };
 
-  // Hàm helper để xử lý URL hình ảnh (phòng trường hợp dùng đường dẫn tương đối)
   const getImageUrl = (path) => {
     if (!path) return 'https://via.placeholder.com/150';
     if (path.startsWith('http')) return path;
@@ -70,6 +65,30 @@ const AdminApproveProduct = () => {
 
   return (
     <div className="mx-auto max-w-6xl p-4 md:p-6">
+      {/* 2. Nút quay về Home */}
+      <div className="mb-6">
+        <Link
+          to="/"
+          className="inline-flex items-center text-sm font-medium text-gray-500 transition-colors hover:text-blue-600"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="mr-2 h-4 w-4"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M10 19l-7-7m0 0l7-7m-7 7h18"
+            />
+          </svg>
+          Quay lại trang chủ
+        </Link>
+      </div>
+
       <div className="mb-8 flex items-center justify-between">
         <h2 className="text-2xl font-bold text-gray-800">
           Phê duyệt sản phẩm
@@ -77,17 +96,23 @@ const AdminApproveProduct = () => {
             {products?.length || 0}
           </span>
         </h2>
-        <button onClick={loadProducts} className="text-sm text-blue-600 hover:underline">
-          Làm mới 🔄
+        <button
+          onClick={loadProducts}
+          className="flex items-center gap-1 text-sm font-medium text-blue-600 hover:text-blue-800"
+        >
+          Làm mới <span>🔄</span>
         </button>
       </div>
 
       {!products || products.length === 0 ? (
-        <div className="flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-gray-200 bg-white py-20">
+        <div className="flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-gray-200 bg-white py-20 shadow-sm">
           <span className="mb-4 text-5xl">📦</span>
           <p className="text-lg font-medium text-gray-500">
             Hiện không có sản phẩm nào đang chờ duyệt.
           </p>
+          <Link to="/" className="mt-4 text-blue-600 hover:underline">
+            Về trang chủ
+          </Link>
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-6">
