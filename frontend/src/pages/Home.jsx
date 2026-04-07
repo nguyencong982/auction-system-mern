@@ -278,6 +278,13 @@ const Home = () => {
                 href="/admin/withdrawal"
                 isOpen={isSidebarOpen}
               />
+              {/* Dòng mới thêm dưới đây */}
+              <MenuLink
+                icon="📋"
+                label="Duyệt sản phẩm"
+                href="/admin/approve-products"
+                isOpen={isSidebarOpen}
+              />
             </>
           )}
           <MenuLink
