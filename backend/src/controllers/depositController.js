@@ -2,9 +2,7 @@ import Transaction from '../models/Transaction.js';
 import User from '../models/User.js';
 import { io } from '../app.js';
 
-
-
-// 1. User tạo lệnh nạp tiền (Giữ nguyên)
+// 1. User tạo lệnh nạp tiền
 export const createDeposit = async (req, res) => {
     try {
         const { amount } = req.body;
@@ -27,7 +25,7 @@ export const createDeposit = async (req, res) => {
     }
 };
 
-// 2. Admin duyệt nạp tiền - CẬP NHẬT SOCKET.IO
+// 2. Admin duyệt nạp tiền
 export const approveDeposit = async (req, res) => {
     try {
         const { transactionId } = req.params;
@@ -47,14 +45,12 @@ export const approveDeposit = async (req, res) => {
             transaction.status = 'success';
             await transaction.save();
 
-            // --- LOGIC SOCKET.IO THỜI GIAN THỰC ---
-            // Gửi tín hiệu đến phòng riêng của User (room name chính là userId)
+            // Gửi tín hiệu Socket.io thời gian thực
             io.to(user._id.toString()).emit('depositSuccess', {
                 newBalance: user.balance,
                 amount: transaction.amount,
                 message: `Tài khoản của bạn đã được cộng ${transaction.amount.toLocaleString()}đ!`
             });
-            // --------------------------------------
 
             return res.json({ success: true, message: "Đã duyệt và cộng tiền thành công!" });
         }
@@ -65,12 +61,36 @@ export const approveDeposit = async (req, res) => {
     }
 };
 
-// 3. Admin xem tất cả yêu cầu nạp tiền đang chờ (Giữ nguyên)
+// 3. Admin từ chối và XÓA lệnh nạp (Giải quyết yêu cầu của bạn)
+export const rejectDeposit = async (req, res) => {
+    try {
+        const { transactionId } = req.params;
+
+        // Tìm và xóa trực tiếp khỏi database
+        const transaction = await Transaction.findByIdAndDelete(transactionId);
+
+        if (!transaction) {
+            return res.status(404).json({ 
+                success: false, 
+                message: "Không tìm thấy lệnh nạp hoặc lệnh đã được xử lý trước đó" 
+            });
+        }
+
+        res.json({ 
+            success: true, 
+            message: "Đã từ chối và xóa lệnh nạp lỗi thành công!" 
+        });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+// 4. Admin xem tất cả yêu cầu nạp tiền đang chờ
 export const getAllPendingDeposits = async (req, res) => {
     try {
         const list = await Transaction.find({ status: 'pending' })
             .populate('userId', 'fullName email')
-            .sort({ createdAt: -1 }); // Hiện yêu cầu mới nhất lên đầu
+            .sort({ createdAt: -1 });
         res.json({ success: true, data: list });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });

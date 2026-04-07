@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react';
 import API from '../../api';
 import { toast } from 'react-toastify';
-import { Link } from 'react-router-dom'; // Thêm Link để quay về Home
+import { Link } from 'react-router-dom';
 
 const AdminDeposit = () => {
   const [pendingList, setPendingList] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  // Lấy danh sách chờ duyệt
   const fetchPendingDeposits = async () => {
     try {
       setLoading(true);
@@ -25,19 +26,16 @@ const AdminDeposit = () => {
     fetchPendingDeposits();
   }, []);
 
-  // Hàm duyệt lệnh nạp
+  // 1. Logic Duyệt nạp tiền
   const handleApprove = async (transactionId) => {
-    if (
-      !window.confirm(
-        'Bạn có chắc chắn muốn DUYỆT lệnh nạp này? Tiền sẽ được cộng vào tài khoản user.'
-      )
-    )
+    if (!window.confirm('Bạn có chắc chắn muốn DUYỆT lệnh nạp này? Tiền sẽ được cộng cho User.'))
       return;
 
     try {
       const res = await API.put(`/deposit/approve/${transactionId}`);
       if (res.data.success) {
         toast.success('Duyệt thành công! Tiền đã được cộng.');
+        // Xóa khỏi danh sách hiển thị ngay lập tức
         setPendingList((prev) => prev.filter((item) => item._id !== transactionId));
       }
     } catch (error) {
@@ -45,39 +43,39 @@ const AdminDeposit = () => {
     }
   };
 
-  // Hàm từ chối/xóa lệnh nạp (Xử lý các lệnh lỗi hoặc không có tiền)
+  // 2. Logic Từ chối và XÓA lệnh nạp (Khớp với route DELETE vừa tạo)
   const handleReject = async (transactionId) => {
     if (
-      !window.confirm('Bạn có chắc chắn muốn TỪ CHỐI lệnh này? Lệnh sẽ bị hủy và không cộng tiền.')
+      !window.confirm(
+        'Bạn có chắc chắn muốn TỪ CHỐI và XÓA lệnh này? Dữ liệu lệnh nạp sẽ bị xóa vĩnh viễn.'
+      )
     )
       return;
 
     try {
-      // Giả sử backend của bạn có route xóa hoặc update status thành 'rejected'
-      // Nếu chưa có route riêng, bạn có thể dùng phương thức DELETE
+      // Gọi tới route DELETE /api/deposit/reject/:transactionId
       const res = await API.delete(`/deposit/reject/${transactionId}`);
 
       if (res.data.success) {
         toast.warn('Đã từ chối và xóa lệnh nạp lỗi.');
+        // Cập nhật UI
         setPendingList((prev) => prev.filter((item) => item._id !== transactionId));
       }
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Lỗi khi thực hiện thao tác');
-      // Backup trường hợp backend chưa có route DELETE: xóa cứng ở UI để dọn rác
-      // setPendingList(prev => prev.filter(item => item._id !== transactionId));
+      toast.error(error.response?.data?.message || 'Lỗi khi thực hiện xóa');
     }
   };
 
   if (loading)
     return (
-      <div className="mt-20 animate-pulse text-center font-bold text-gray-400">
+      <div className="mt-20 animate-pulse text-center font-bold text-gray-400 italic">
         Đang tải dữ liệu quản trị...
       </div>
     );
 
   return (
     <div className="mx-auto mt-10 max-w-6xl p-4 md:p-8">
-      {/* Nút Quay về Home */}
+      {/* Nút Quay về Dashboard */}
       <div className="mb-6">
         <Link
           to="/"
@@ -101,11 +99,11 @@ const AdminDeposit = () => {
         </Link>
       </div>
 
-      <div className="rounded-[2rem] border border-gray-100 bg-white p-6 shadow-xl shadow-gray-100">
+      <div className="rounded-[2.5rem] border border-gray-100 bg-white p-6 shadow-2xl shadow-gray-100">
         <div className="mb-8 flex items-center justify-between">
           <div>
             <h2 className="text-2xl font-black text-gray-800">Phê duyệt nạp tiền</h2>
-            <p className="text-sm text-gray-400">Quản lý các yêu cầu nạp tiền từ người dùng</p>
+            <p className="text-sm text-gray-400">Quản trị viên xử lý các yêu cầu nạp tiền</p>
           </div>
           <button
             onClick={fetchPendingDeposits}
@@ -130,7 +128,7 @@ const AdminDeposit = () => {
               {pendingList.length === 0 ? (
                 <tr>
                   <td colSpan="5" className="py-20 text-center font-medium text-gray-400">
-                    <div className="mb-2 text-4xl">🏖️</div>
+                    <div className="mb-2 text-4xl">☕</div>
                     Hiện không có yêu cầu nào chờ xử lý.
                   </td>
                 </tr>
@@ -149,20 +147,20 @@ const AdminDeposit = () => {
                       </div>
                     </td>
                     <td className="py-5">
-                      <span className="rounded-lg border border-amber-100 bg-amber-50 px-3 py-1 text-[11px] font-black tracking-wider text-amber-600 uppercase">
+                      <span className="rounded-lg border border-amber-100 bg-amber-50 px-3 py-1 text-[11px] font-black text-amber-600 uppercase">
                         {item.code}
                       </span>
                     </td>
-                    <td className="py-5 text-xs font-medium text-gray-500">
+                    <td className="py-5 text-xs text-gray-500">
                       {new Date(item.createdAt).toLocaleString('vi-VN')}
                     </td>
                     <td className="py-5 text-right">
-                      <div className="flex justify-end gap-2">
-                        {/* Nút Từ chối */}
+                      <div className="flex justify-end gap-3">
+                        {/* Nút Từ chối/Xóa */}
                         <button
                           onClick={() => handleReject(item._id)}
-                          className="rounded-xl border border-transparent p-2 text-red-400 shadow-sm transition-all hover:border-red-600 hover:bg-red-500 hover:text-white"
-                          title="Từ chối/Xóa lệnh lỗi"
+                          className="flex h-10 w-10 items-center justify-center rounded-xl border border-red-100 text-red-500 transition-all hover:bg-red-500 hover:text-white"
+                          title="Từ chối và Xóa lệnh"
                         >
                           <svg
                             xmlns="http://www.w3.org/2000/svg"
@@ -183,7 +181,7 @@ const AdminDeposit = () => {
                         {/* Nút Duyệt */}
                         <button
                           onClick={() => handleApprove(item._id)}
-                          className="rounded-xl bg-green-600 px-5 py-2 text-xs font-black text-white shadow-lg shadow-green-100 transition-all hover:bg-green-700 active:scale-95"
+                          className="rounded-xl bg-green-600 px-6 py-2 text-xs font-black text-white shadow-lg shadow-green-100 transition-all hover:bg-green-700 active:scale-95"
                         >
                           Duyệt ngay
                         </button>

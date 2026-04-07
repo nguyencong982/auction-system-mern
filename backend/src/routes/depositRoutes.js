@@ -4,14 +4,18 @@ import { auth, adminMiddleware } from '../middleware/auth.js';
 import { 
     createDeposit, 
     approveDeposit, 
-    getAllPendingDeposits 
+    getAllPendingDeposits,
+    rejectDeposit // Import hàm mới
 } from '../controllers/depositController.js';
 
-// Route cho User: Tạo lệnh nạp
+// Route cho User
 router.post('/create', auth, createDeposit);
 
-// Route cho Admin: Xem danh sách chờ và Duyệt
+// Route cho Admin
 router.get('/pending-list', auth, adminMiddleware, getAllPendingDeposits);
 router.put('/approve/:transactionId', auth, adminMiddleware, approveDeposit);
+
+// Route Xóa/Từ chối (Dùng DELETE để đúng chuẩn RESTful)
+router.delete('/reject/:transactionId', auth, adminMiddleware, rejectDeposit);
 
 export default router;
