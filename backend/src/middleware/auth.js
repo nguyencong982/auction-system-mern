@@ -31,10 +31,9 @@ export const auth = async (req, res, next) => {
     }
 };
 
-// 2. Middleware kiểm tra đã thiết lập mã PIN chưa (Dùng cho rút tiền)
+// 2. Middleware kiểm tra đã thiết lập mã PIN chưa
 export const requirePin = async (req, res, next) => {
     try {
-        // req.user được kế thừa từ middleware auth chạy trước đó
         if (!req.user.hasPaymentPin) {
             return res.status(403).json({ 
                 success: false, 
@@ -48,6 +47,7 @@ export const requirePin = async (req, res, next) => {
 };
 
 // 3. Middleware dành cho Admin
+// Lưu ý: Middleware này phải được đặt SAU middleware auth
 export const adminMiddleware = (req, res, next) => {
     if (req.user && req.user.role === 'admin') {
         next();
@@ -59,5 +59,4 @@ export const adminMiddleware = (req, res, next) => {
     }
 };
 
-// Xuất mặc định là auth để các file cũ không bị lỗi import
 export default auth;

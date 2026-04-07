@@ -12,7 +12,7 @@ import withdrawalRoutes from './routes/withdrawalRoutes.js';
 import UserController from './controllers/UserController.js';
 import ProductController from './controllers/ProductController.js';
 import Message from './models/Message.js';
-import auth from './middleware/auth.js'; 
+import auth, { adminMiddleware } from './middleware/auth.js'; // Cập nhật: Thêm adminMiddleware
 import upload from './middleware/upload.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -21,7 +21,7 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const httpServer = createServer(app);
 
-// --- 1. TỰ ĐỘNG TẠO THƯ MỤC UPLOADS (Tránh lỗi 500 khi upload đệm) ---
+// --- 1. TỰ ĐỘNG TẠO THƯ MỤC UPLOADS ---
 const uploadDir = path.join(__dirname, 'uploads');
 if (!fs.existsSync(uploadDir)) {
     fs.mkdirSync(uploadDir, { recursive: true });
@@ -50,7 +50,6 @@ app.use(cors({
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// CẤU HÌNH STATIC FOLDER (Quan trọng để xem được các ảnh local cũ nếu có)
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use('/auction_products', express.static(path.join(__dirname, 'auction_products')));
 
@@ -101,7 +100,7 @@ io.on('connection', (socket) => {
 
 import './services/AuctionTask.js'; 
 
-// --- 6. HỆ THỐNG ROUTES (GIỮ NGUYÊN) ---
+// --- 6. HỆ THỐNG ROUTES ---
 
 // A. Routes Xác thực
 app.post('/api/auth/register', UserController.register); 
@@ -118,7 +117,12 @@ app.get('/api/users/follow-lists', auth, UserController.getFollowLists);
 app.post('/api/users/update-avatar', auth, upload.single('avatar'), UserController.updateProfileImage);
 app.post('/api/users/update-cover', auth, upload.single('cover'), UserController.updateProfileImage);
 
-// C. Routes Sản phẩm
+// C. Routes Sản phẩm (Đã thêm chức năng Duyệt cho Admin)
+// C.1: NHÓM ROUTE ADMIN (Phải đặt TRƯỚC route có :id)
+app.get('/api/products/admin/pending', auth, adminMiddleware, ProductController.getPendingAdmin);
+app.patch('/api/products/admin/approve/:id', auth, adminMiddleware, ProductController.approveProduct);
+
+// C.2: NHÓM ROUTE CHỨC NĂNG & CÔNG KHAI
 app.get('/api/products', ProductController.getAllActive);
 app.get('/api/products/my-sold-items', auth, ProductController.getMySoldProducts); 
 app.get('/api/products/check-has-products', auth, ProductController.checkUserHasProducts); 

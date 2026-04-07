@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
-import API from './api'; // Đảm bảo bạn đã có file cấu hình axios/api
+import API from './api';
 
 // Import Pages
 import Login from './pages/Auth/Login';
@@ -22,9 +22,9 @@ import SoldProducts from './pages/Product/SoldProducts';
 import WithdrawMoney from './pages/Profile/WithdrawMoney';
 import AdminWithdrawal from './pages/Admin/AdminWithdrawal';
 import AdminDeposit from './pages/Admin/AdminDeposit';
+import AdminApproveProduct from './pages/Admin/AdminApproveProduct'; // <-- THÊM DÒNG NÀY
 import SetupPaymentPin from './pages/Profile/SetupPaymentPin';
 
-// Component tự động cuộn lên đầu trang khi đổi route
 const ScrollToTop = () => {
   const { pathname } = useLocation();
   useEffect(() => {
@@ -33,16 +33,23 @@ const ScrollToTop = () => {
   return null;
 };
 
-// Component bảo vệ Route (Yêu cầu đăng nhập)
-const PrivateRoute = ({ children }) => {
+const PrivateRoute = ({ children, roleRequired }) => {
   const token = localStorage.getItem('token');
-  return token ? children : <Navigate to="/login" replace />;
+  const user = JSON.parse(localStorage.getItem('user'));
+
+  if (!token) return <Navigate to="/login" replace />;
+
+  // Nếu route yêu cầu quyền admin mà user không phải admin thì đá về home
+  if (roleRequired === 'admin' && user?.role !== 'admin') {
+    return <Navigate to="/" replace />;
+  }
+
+  return children;
 };
 
 function App() {
   const [user, setUser] = useState(null);
 
-  // Hàm fetch thông tin user dùng chung cho toàn app
   const fetchUserData = async () => {
     const token = localStorage.getItem('token');
     if (!token) return;
@@ -51,7 +58,6 @@ function App() {
       const res = await API.get('/auth/profile');
       if (res.data.success) {
         setUser(res.data.data);
-        // Lưu vào localStorage để các component khác có thể lấy nhanh nếu cần
         localStorage.setItem('user', JSON.stringify(res.data.data));
       }
     } catch (error) {
@@ -95,7 +101,6 @@ function App() {
               </PrivateRoute>
             }
           />
-
           <Route
             path="/create-product"
             element={
@@ -128,7 +133,6 @@ function App() {
               </PrivateRoute>
             }
           />
-
           <Route
             path="/profile"
             element={
@@ -137,7 +141,6 @@ function App() {
               </PrivateRoute>
             }
           />
-
           <Route
             path="/deposit"
             element={
@@ -167,7 +170,7 @@ function App() {
           <Route
             path="/admin/deposit"
             element={
-              <PrivateRoute>
+              <PrivateRoute roleRequired="admin">
                 <AdminDeposit />
               </PrivateRoute>
             }
@@ -175,8 +178,16 @@ function App() {
           <Route
             path="/admin/withdrawal"
             element={
-              <PrivateRoute>
+              <PrivateRoute roleRequired="admin">
                 <AdminWithdrawal />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/admin/approve-products"
+            element={
+              <PrivateRoute roleRequired="admin">
+                <AdminApproveProduct />
               </PrivateRoute>
             }
           />
@@ -186,13 +197,11 @@ function App() {
             path="/settings/payment-pin"
             element={
               <PrivateRoute>
-                {/* Truyền user và hàm refresh vào đây để SetupPaymentPin nhận được số điện thoại */}
                 <SetupPaymentPin user={user} onRefreshProfile={fetchUserData} />
               </PrivateRoute>
             }
           />
 
-          {/* --- 404 HANDLER --- */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </div>

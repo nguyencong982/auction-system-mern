@@ -9,10 +9,11 @@ const CreateProduct = () => {
     initialPrice: '',
     stepPrice: '',
     endTime: '',
-    category: 'Công nghệ', // Đã sửa: Khớp với option đầu tiên hiển thị trên UI
+    category: 'Công nghệ',
   });
   const [file, setFile] = useState(null);
   const [preview, setPreview] = useState(null);
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
   // Xử lý khi chọn file ảnh
@@ -20,18 +21,18 @@ const CreateProduct = () => {
     const selectedFile = e.target.files[0];
     if (selectedFile) {
       setFile(selectedFile);
-      setPreview(URL.createObjectURL(selectedFile)); // Tạo link tạm để hiển thị
+      setPreview(URL.createObjectURL(selectedFile));
     }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // Kiểm tra nhanh trước khi gửi
     if (!file) {
       return alert('Vui lòng chọn một tấm ảnh thật đẹp cho sản phẩm!');
     }
 
+    setLoading(true);
     try {
       const data = new FormData();
       data.append('title', formData.title);
@@ -39,27 +40,28 @@ const CreateProduct = () => {
       data.append('initialPrice', formData.initialPrice);
       data.append('stepPrice', formData.stepPrice);
       data.append('category', formData.category);
-
-      // Tính toán durationHours từ endTime nếu Backend của bạn dùng durationHours
-      // Hoặc nếu bạn đã sửa Backend nhận endTime thì giữ nguyên line dưới:
       data.append('endTime', formData.endTime);
-
-      // KEY NÀY PHẢI KHỚP: upload.single('image') ở Backend
       data.append('image', file);
 
-      // KHUYÊN DÙNG: Để Axios tự xử lý Header cho FormData
+      // Gửi yêu cầu tới Backend (Mặc định sẽ lưu status: 'pending')
       await API.post('/products', data);
 
-      alert('🚀 Đăng sản phẩm thành công!');
-      navigate('/');
+      alert(
+        '🚀 Đăng sản phẩm thành công! Vui lòng chờ Ban quản trị kiểm duyệt trước khi sản phẩm được hiển thị công khai.'
+      );
+
+      // Điều hướng về trang quản lý để người dùng thấy trạng thái "Chờ duyệt"
+      navigate('/manage-products');
     } catch (error) {
       console.error('Lỗi khi đăng sản phẩm:', error.response?.data);
       alert(error.response?.data?.message || 'Lỗi server (500) hoặc lỗi đường truyền');
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <div className="mx-auto mt-10 max-w-2xl rounded-3xl border border-gray-100 bg-white p-8 shadow-xl">
+    <div className="mx-auto mt-10 mb-20 max-w-2xl rounded-3xl border border-gray-100 bg-white p-8 shadow-xl">
       <h2 className="mb-8 text-center text-2xl font-bold text-gray-800">Đăng sản phẩm đấu giá</h2>
 
       <form onSubmit={handleSubmit} className="space-y-5">
@@ -86,15 +88,17 @@ const CreateProduct = () => {
         </div>
 
         <div className="space-y-4">
-          <input
-            type="text"
-            placeholder="Tên sản phẩm"
-            required
-            className="w-full rounded-xl border border-gray-200 p-4 outline-none focus:ring-2 focus:ring-blue-500"
-            onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-          />
+          <div>
+            <label className="ml-1 text-xs font-bold text-gray-500 uppercase">Tên sản phẩm</label>
+            <input
+              type="text"
+              placeholder="Ví dụ: iPhone 15 Pro Max Like New"
+              required
+              className="w-full rounded-xl border border-gray-200 p-4 outline-none focus:ring-2 focus:ring-blue-500"
+              onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+            />
+          </div>
 
-          {/* --- THÊM Ô CHỌN DANH MỤC --- */}
           <div>
             <label className="ml-1 text-xs font-bold text-gray-500 uppercase">
               Danh mục sản phẩm
@@ -111,14 +115,16 @@ const CreateProduct = () => {
               <option value="Khác">📦 Khác</option>
             </select>
           </div>
-          {/* ---------------------------- */}
 
-          <textarea
-            placeholder="Mô tả chi tiết sản phẩm..."
-            required
-            className="h-32 w-full rounded-xl border border-gray-200 p-4 outline-none focus:ring-2 focus:ring-blue-500"
-            onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-          />
+          <div>
+            <label className="ml-1 text-xs font-bold text-gray-500 uppercase">Mô tả sản phẩm</label>
+            <textarea
+              placeholder="Mô tả chi tiết tình trạng, bảo hành..."
+              required
+              className="h-32 w-full rounded-xl border border-gray-200 p-4 outline-none focus:ring-2 focus:ring-blue-500"
+              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+            />
+          </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div>
@@ -162,9 +168,14 @@ const CreateProduct = () => {
 
         <button
           type="submit"
-          className="w-full rounded-xl bg-blue-600 py-4 text-lg font-bold text-white shadow-lg shadow-blue-200 transition-all hover:bg-blue-700 active:scale-[0.98]"
+          disabled={loading}
+          className={`w-full rounded-xl py-4 text-lg font-bold text-white shadow-lg transition-all active:scale-[0.98] ${
+            loading
+              ? 'cursor-not-allowed bg-gray-400'
+              : 'bg-blue-600 shadow-blue-200 hover:bg-blue-700'
+          }`}
         >
-          Xác nhận đăng bán
+          {loading ? 'Đang xử lý...' : 'Xác nhận đăng bán'}
         </button>
       </form>
     </div>

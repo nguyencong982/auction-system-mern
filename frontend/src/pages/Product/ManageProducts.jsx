@@ -5,9 +5,8 @@ import { toast, ToastContainer } from 'react-toastify';
 const ManageProducts = () => {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
-
-  // State để quản lý việc hiển thị thông tin người thắng
   const [selectedWinner, setSelectedWinner] = useState(null);
+
   const fetchMyProducts = async () => {
     try {
       const res = await API.get('/products/my-products');
@@ -18,7 +17,7 @@ const ManageProducts = () => {
       setLoading(false);
     }
   };
-  
+
   useEffect(() => {
     fetchMyProducts();
   }, []);
@@ -34,15 +33,48 @@ const ManageProducts = () => {
     }
   };
 
-  if (loading) return <div className="p-8 text-center font-bold">Đang tải kho hàng...</div>;
+  // Hàm helper để render nhãn trạng thái (MỚI)
+  const renderStatusBadge = (status) => {
+    switch (status) {
+      case 'active':
+        return (
+          <span className="rounded-full bg-green-100 px-3 py-1 text-xs font-bold text-green-600 uppercase">
+            ● Đang đấu giá
+          </span>
+        );
+      case 'pending':
+        return (
+          <span className="rounded-full bg-yellow-100 px-3 py-1 text-xs font-bold text-yellow-600 uppercase">
+            ● Đang chờ duyệt
+          </span>
+        );
+      case 'rejected':
+        return (
+          <span className="rounded-full bg-red-100 px-3 py-1 text-xs font-bold text-red-600 uppercase">
+            ● Bị từ chối
+          </span>
+        );
+      case 'ended':
+        return (
+          <span className="rounded-full bg-gray-100 px-3 py-1 text-xs font-bold text-gray-600 uppercase">
+            ● Đã kết thúc
+          </span>
+        );
+      default:
+        return null;
+    }
+  };
+
+  if (loading)
+    return <div className="p-8 text-center font-bold text-gray-500">Đang tải kho hàng...</div>;
 
   return (
-    <div className="mx-auto max-w-5xl p-8">
+    <div className="mx-auto mb-20 max-w-5xl p-8">
       <ToastContainer />
       <div className="mb-8 flex items-center gap-4">
         <button
           onClick={() => window.history.back()}
-          className="rounded-full p-2 hover:bg-gray-100"
+          className="rounded-full p-2 transition-colors hover:bg-gray-100"
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -64,7 +96,15 @@ const ManageProducts = () => {
 
       <div className="grid gap-6">
         {products.length === 0 ? (
-          <p className="py-10 text-center text-gray-500">Bạn chưa đăng sản phẩm nào.</p>
+          <div className="py-20 text-center">
+            <p className="text-gray-500">Bạn chưa đăng sản phẩm nào.</p>
+            <button
+              onClick={() => (window.location.href = '/create-product')}
+              className="mt-4 font-bold text-blue-600 hover:underline"
+            >
+              Đăng sản phẩm ngay
+            </button>
+          </div>
         ) : (
           products.map((p) => (
             <div
@@ -73,8 +113,8 @@ const ManageProducts = () => {
             >
               <img
                 src={p.imageUrl}
-                className="h-40 w-full rounded-2xl object-cover md:w-40"
-                alt=""
+                className="h-40 w-full rounded-2xl bg-gray-50 object-cover md:w-40"
+                alt={p.title}
               />
 
               <div className="flex-1">
@@ -86,16 +126,20 @@ const ManageProducts = () => {
                       {p.currentPrice.toLocaleString()}đ
                     </p>
                   </div>
-                  <span
-                    className={`rounded-full px-3 py-1 text-xs font-bold uppercase ${p.status === 'active' ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'}`}
-                  >
-                    {p.status === 'active' ? '● Đang đấu giá' : '● Đã kết thúc'}
-                  </span>
+                  {/* Sử dụng hàm render nhãn trạng thái mới ở đây */}
+                  {renderStatusBadge(p.status)}
                 </div>
 
-                {/* LỊCH SỬ ĐẤU GIÁ HOẶC THÔNG TIN NGƯỜI THẮNG TÓM TẮT */}
                 <div className="mt-4 rounded-2xl bg-gray-50 p-4">
-                  {p.status === 'ended' && p.currentWinner ? (
+                  {p.status === 'pending' ? (
+                    <p className="text-sm text-yellow-700 italic">
+                      Admin đang kiểm tra thông tin sản phẩm của bạn. Vui lòng đợi trong giây lát.
+                    </p>
+                  ) : p.status === 'rejected' ? (
+                    <p className="text-sm text-red-700 italic">
+                      Sản phẩm không phù hợp với tiêu chuẩn cộng đồng hoặc sai thông tin.
+                    </p>
+                  ) : p.status === 'ended' && p.currentWinner ? (
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <span className="text-xl">🏆</span>
@@ -136,7 +180,6 @@ const ManageProducts = () => {
               </div>
 
               <div className="flex justify-center gap-2 md:flex-col">
-                {/* NÚT XEM THÔNG TIN GIAO HÀNG (CHỈ HIỆN KHI CÓ NGƯỜI THẮNG) */}
                 {p.status === 'ended' && p.currentWinner ? (
                   <button
                     onClick={() => setSelectedWinner(p.currentWinner)}
@@ -166,15 +209,14 @@ const ManageProducts = () => {
         )}
       </div>
 
-      {/* MODAL CHI TIẾT GIAO HÀNG */}
+      {/* MODAL CHI TIẾT GIAO HÀNG (GIỮ NGUYÊN) */}
       {selectedWinner && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
           <div className="animate-in zoom-in w-full max-w-md rounded-[32px] bg-white p-8 shadow-2xl duration-200">
             <h2 className="mb-6 text-center text-2xl font-black text-gray-800">
               Thông tin khách hàng
             </h2>
-
-            <div className="space-y-4 rounded-3xl bg-gray-50 p-6">
+            <div className="space-y-4 rounded-3xl bg-gray-50 p-6 text-left">
               <div>
                 <p className="text-[10px] font-black text-gray-400 uppercase">Họ và tên</p>
                 <p className="text-lg font-bold text-gray-800">{selectedWinner.fullName}</p>
@@ -190,10 +232,6 @@ const ManageProducts = () => {
                 <p className="leading-relaxed font-bold text-gray-700">
                   {selectedWinner.address || 'Người mua chưa cung cấp địa chỉ'}
                 </p>
-              </div>
-              <div>
-                <p className="text-[10px] font-black text-gray-400 uppercase">Email</p>
-                <p className="font-medium text-gray-600">{selectedWinner.email}</p>
               </div>
             </div>
             <button

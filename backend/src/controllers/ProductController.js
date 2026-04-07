@@ -4,7 +4,69 @@ import User from '../models/User.js';
 import Message from '../models/Message.js'; 
 
 class ProductController {
-    // 1. Lấy danh sách sản phẩm đang đấu giá
+    // =========================================================
+    // CHỨC NĂNG MỚI: DÀNH CHO ADMIN DUYỆT SẢN PHẨM
+    // =========================================================
+
+    // 1. Lấy danh sách sản phẩm chờ duyệt (Chỉ Admin)
+    getPendingAdmin = async (req, res) => {
+        try {
+            // Chỉ lấy các sản phẩm có status là 'pending'
+            const products = await Product.find({ status: 'pending' })
+                .populate('owner', 'fullName email _id avatar')
+                .sort({ createdAt: -1 });
+
+            res.status(200).json({ success: true, data: products });
+        } catch (error) {
+            res.status(500).json({ success: false, message: error.message });
+        }
+    }
+
+    // 2. Xử lý duyệt hoặc từ chối (Chỉ Admin)
+    approveProduct = async (req, res) => {
+        try {
+            const { id } = req.params;
+            const { status } = req.body; // 'active' hoặc 'rejected'
+
+            if (!['active', 'rejected'].includes(status)) {
+                return res.status(400).json({ success: false, message: "Trạng thái không hợp lệ" });
+            }
+
+            const product = await Product.findByIdAndUpdate(
+                id,
+                { status: status },
+                { new: true }
+            ).populate('owner', 'fullName email');
+
+            if (!product) {
+                return res.status(404).json({ success: false, message: "Không tìm thấy sản phẩm" });
+            }
+
+            // Thông báo qua Socket nếu cần (Ví dụ: báo cho chủ sản phẩm biết đã được duyệt)
+            const io = req.app.get('socketio');
+            if (io) {
+                io.emit('productStatusUpdated', { 
+                    productId: product._id, 
+                    status: product.status,
+                    title: product.title 
+                });
+            }
+
+            res.status(200).json({ 
+                success: true, 
+                message: status === 'active' ? "Đã duyệt sản phẩm thành công" : "Đã từ chối sản phẩm",
+                data: product 
+            });
+        } catch (error) {
+            res.status(500).json({ success: false, message: error.message });
+        }
+    }
+
+    // =========================================================
+    // CÁC CHỨC NĂNG CŨ (ĐÃ ĐƯỢC GIỮ NGUYÊN VÀ TỐI ƯU HÓA)
+    // =========================================================
+
+    // 1. Lấy danh sách sản phẩm đang đấu giá (Chỉ lấy 'active')
     getAllActive = async (req, res) => {
         try {
             const { search, category, minPrice, maxPrice, sort } = req.query;
@@ -39,7 +101,7 @@ class ProductController {
         }
     }
 
-    // 2. Lấy sản phẩm của TÔI
+    // 2. Lấy sản phẩm của TÔI (Bao gồm cả đang chờ duyệt)
     getMyProducts = async (req, res) => {
         try {
             if (!req.user || !req.user.id) {
@@ -113,7 +175,7 @@ class ProductController {
         }
     }
 
-    // 6. ĐĂNG SẢN PHẨM (Cloudinary + Fix endTime)
+    // 6. ĐĂNG SẢN PHẨM (Mặc định status là pending)
     create = async (req, res) => {
         try {
             const ownerId = req.user.id;
@@ -137,10 +199,10 @@ class ProductController {
                 initialPrice: Number(initialPrice),
                 stepPrice: Number(stepPrice),
                 category: category,
-                imageUrl: req.file.path // Đường dẫn từ Cloudinary
+                imageUrl: req.file.path,
+                status: 'pending' // ÉP BUỘC: Luôn chờ duyệt khi tạo mới
             };
 
-            // Ưu tiên endTime từ Frontend chọn, nếu không có mới dùng durationHours
             if (endTime) {
                 productData.endTime = new Date(endTime);
             } else {
@@ -153,9 +215,8 @@ class ProductController {
             const populatedProduct = await Product.findById(product._id)
                 .populate('owner', 'fullName _id avatar');
 
-            const io = req.app.get('socketio');
-            if (io) io.emit('newProduct', populatedProduct);
-
+            // Không emit 'newProduct' ra cộng đồng ở đây vì sản phẩm chưa được duyệt
+            // Chỉ trả về cho người tạo xem
             res.status(201).json({ success: true, data: populatedProduct });
 
         } catch (error) {
@@ -170,9 +231,10 @@ class ProductController {
             const { id } = req.params;
             const { title, description, stepPrice, category } = req.body;
 
+            // Sau khi cập nhật, có thể bạn muốn đưa về 'pending' để duyệt lại (tùy chính sách)
             const product = await Product.findOneAndUpdate(
                 { _id: id, owner: req.user.id, currentWinner: null },
-                { title, description, stepPrice, category },
+                { title, description, stepPrice, category, status: 'pending' }, 
                 { new: true }
             ).populate('owner', 'fullName _id avatar');
 
@@ -220,8 +282,16 @@ class ProductController {
             const product = await Product.findById(productId);
             if (!product) throw new Error("Sản phẩm không tồn tại");
 
+            // RÀO CHẮN: Phải là 'active' mới được đặt giá
+            if (product.status !== 'active') {
+                return res.status(400).json({ 
+                    success: false, 
+                    message: "Sản phẩm này chưa được duyệt hoặc đã kết thúc!" 
+                });
+            }
+
             const now = new Date();
-            if (now > new Date(product.endTime) || product.status !== 'active') {
+            if (now > new Date(product.endTime)) {
                 return res.status(400).json({ 
                     success: false, 
                     message: "Phiên đấu giá này đã kết thúc!" 

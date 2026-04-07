@@ -51,7 +51,13 @@ const productSchema = new mongoose.Schema({
     status: { 
         type: String, 
         enum: ['pending', 'active', 'ended', 'rejected', 'cancelled'], 
-        default: 'active' 
+        default: 'pending' // SỬA: Đổi từ 'active' thành 'pending' để bắt buộc qua bước duyệt
+    },
+
+    // --- THÊM MỚI: GHI CHÚ CỦA ADMIN KHI DUYỆT HOẶC TỪ CHỐI ---
+    adminNote: { 
+        type: String, 
+        default: '' 
     }
     // ------------------------------------------------------
 }, { timestamps: true });
