@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { toast } from 'react-toastify';
 import { useNavigate } from 'react-router-dom';
-// Sửa lại import: dùng các hàm đã export từ api.js
 import { createWithdrawalRequest } from '../../api';
 
 const WithdrawMoney = () => {
@@ -17,7 +16,6 @@ const WithdrawMoney = () => {
   const [pin, setPin] = useState('');
   const [loading, setLoading] = useState(false);
 
-  // Bước 1: Kiểm tra thông tin trước khi hiện Modal PIN
   const handleOpenPinModal = (e) => {
     e.preventDefault();
     if (Number(formData.amount) < 50000) {
@@ -29,8 +27,6 @@ const WithdrawMoney = () => {
     setShowPinModal(true);
   };
 
-  // Bước 2: Xác nhận rút tiền với mã PIN
-  // Bước 2: Xác nhận rút tiền với mã PIN
   const handleConfirmWithdraw = async () => {
     if (pin.length !== 6) {
       return toast.error('Vui lòng nhập đủ 6 số PIN');
@@ -38,21 +34,31 @@ const WithdrawMoney = () => {
 
     setLoading(true);
     try {
-      // SỬA TẠI ĐÂY: Đổi 'paymentPin' thành 'pin' để khớp với Backend
       const res = await createWithdrawalRequest({
         ...formData,
-        pin: pin, // Backend (withdrawalController) đang đợi biến có tên là 'pin'
+        pin: pin,
       });
 
       if (res.data.success) {
-        toast.success('Yêu cầu rút tiền đã được gửi! Chờ Admin phê duyệt.');
+        toast.success(res.data.message || 'Yêu cầu rút tiền thành công!');
         setShowPinModal(false);
         setTimeout(() => navigate('/profile'), 1500);
       }
     } catch (error) {
-      // Backend trả về message gì thì toast sẽ hiển thị message đó
-      toast.error(error.response?.data?.message || 'Mã PIN không đúng hoặc lỗi hệ thống');
-      setPin('');
+      console.error('FULL ERROR:', error);
+      let message = 'Lỗi hệ thống';
+
+      // --- ĐOẠN QUAN TRỌNG: Lấy lỗi từ Backend ---
+      if (error.response && error.response.data) {
+        const data = error.response.data;
+        // Kiểm tra xem backend trả về field 'message' hay 'error'
+        message = data.message || data.error || (typeof data === 'string' ? data : message);
+      } else if (error.message) {
+        message = error.message;
+      }
+
+      toast.error(message);
+      setPin(''); // Reset PIN để người dùng nhập lại
     } finally {
       setLoading(false);
     }
@@ -60,12 +66,8 @@ const WithdrawMoney = () => {
 
   return (
     <div className="relative mx-auto mt-10 max-w-lg rounded-2xl border border-gray-100 bg-white p-8 shadow-xl">
-      {/* Header & Nút Back */}
       <div className="mb-6 flex items-center justify-between">
-        <button
-          onClick={() => navigate(-1)}
-          className="text-gray-500 transition-colors hover:text-blue-600"
-        >
+        <button onClick={() => navigate(-1)} className="text-gray-500 hover:text-blue-600">
           <svg
             xmlns="http://www.w3.org/2000/svg"
             className="h-6 w-6"
@@ -86,7 +88,6 @@ const WithdrawMoney = () => {
       </div>
 
       <form onSubmit={handleOpenPinModal} className="space-y-4">
-        {/* Input Số tiền */}
         <div>
           <label className="mb-1 block text-sm font-medium text-gray-700">
             Số tiền muốn rút (VNĐ)
@@ -101,7 +102,6 @@ const WithdrawMoney = () => {
           />
         </div>
 
-        {/* Chọn Ngân hàng */}
         <div>
           <label className="mb-1 block text-sm font-medium text-gray-700">Tên ngân hàng</label>
           <select
@@ -119,7 +119,6 @@ const WithdrawMoney = () => {
           </select>
         </div>
 
-        {/* Số tài khoản */}
         <div>
           <label className="mb-1 block text-sm font-medium text-gray-700">Số tài khoản</label>
           <input
@@ -132,7 +131,6 @@ const WithdrawMoney = () => {
           />
         </div>
 
-        {/* Tên chủ tài khoản */}
         <div>
           <label className="mb-1 block text-sm font-medium text-gray-700">
             Tên chủ tài khoản (Viết hoa)
@@ -151,19 +149,18 @@ const WithdrawMoney = () => {
 
         <button
           type="submit"
-          className="mt-4 w-full rounded-xl bg-blue-600 py-4 font-bold text-white shadow-lg shadow-blue-200 transition-all hover:bg-blue-700 active:scale-95"
+          className="mt-4 w-full rounded-xl bg-blue-600 py-4 font-bold text-white shadow-lg transition-all hover:bg-blue-700 active:scale-95"
         >
           TIẾP TỤC
         </button>
       </form>
 
-      {/* --- MODAL NHẬP MÃ PIN --- */}
       {showPinModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
           <div className="animate-in zoom-in fade-in w-full max-w-sm rounded-3xl bg-white p-8 shadow-2xl duration-200">
             <h3 className="mb-2 text-center text-xl font-bold text-gray-800">Xác nhận mã PIN</h3>
             <p className="mb-8 px-4 text-center text-sm text-gray-500">
-              Nhập mã PIN thanh toán gồm 6 chữ số để xác thực giao dịch này.
+              Nhập mã PIN thanh toán gồm 6 chữ số.
             </p>
 
             <div className="relative mb-8">

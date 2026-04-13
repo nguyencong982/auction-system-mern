@@ -1,20 +1,14 @@
 import express from 'express';
 import { 
-    createWithdrawal, 
-    getAllWithdrawals, 
-    approveWithdrawal, 
-    getMyWithdrawals 
+  createWithdrawal, 
+  getMyWithdrawals 
 } from '../controllers/withdrawalController.js';
 
-// Cập nhật dòng import này để lấy cả auth và requirePin
-import { auth, requirePin } from '../middleware/auth.js'; 
+import { auth } from '../middleware/auth.js';
 
 const router = express.Router();
 
-router.post('/request', auth, requirePin, createWithdrawal);
-
+router.post('/request', auth, createWithdrawal);
 router.get('/my-history', auth, getMyWithdrawals);
-router.get('/', auth, getAllWithdrawals);
-router.put('/:id/status', auth, approveWithdrawal);
 
 export default router;
