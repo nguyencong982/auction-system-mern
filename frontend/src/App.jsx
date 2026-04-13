@@ -66,11 +66,6 @@ function App() {
       }
     } catch (error) {
       console.error('Lỗi đồng bộ dữ liệu User:', error);
-
-      /** * CHỈ xử lý đăng xuất nếu gặp lỗi 401 (Hết hạn token).
-       * Nếu là lỗi 400 (ví dụ sai mã PIN từ một request khác)
-       * thì KHÔNG xóa thông tin User để giữ nguyên UI hiện tại.
-       */
       if (error.response?.status === 401) {
         localStorage.removeItem('token');
         localStorage.removeItem('user');
@@ -86,24 +81,27 @@ function App() {
   return (
     <Router>
       <ScrollToTop />
-      <div className="min-h-screen bg-gray-100 font-sans text-gray-900 antialiased">
-        {/* TOAST CONTAINER 
-          Z-index 99999 để đảm bảo thông báo luôn nằm trên các Modal lớp phủ.
-        */}
-        <ToastContainer
-          position="top-right"
-          autoClose={3000}
-          hideProgressBar={false}
-          newestOnTop={true}
-          closeOnClick
-          rtl={false}
-          pauseOnFocusLoss
-          draggable
-          pauseOnHover
-          theme="colored"
-          style={{ zIndex: 99999 }}
-        />
 
+      {/* SỬA TẠI ĐÂY: 
+          1. Đưa ToastContainer lên đầu ngay dưới Router.
+          2. Thêm style cưỡng bức zIndex cực cao (999999).
+          3. Thêm thuộc tính stacked để dễ nhìn khi có nhiều lỗi cùng lúc.
+      */}
+      <ToastContainer
+        position="top-right"
+        autoClose={4000}
+        hideProgressBar={false}
+        newestOnTop={true}
+        closeOnClick
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="colored"
+        stacked
+        style={{ zIndex: 999999 }}
+      />
+
+      <div className="min-h-screen bg-gray-100 font-sans text-gray-900 antialiased">
         <Routes>
           {/* --- AUTH ROUTES --- */}
           <Route path="/login" element={<Login />} />
