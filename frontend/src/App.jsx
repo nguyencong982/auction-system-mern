@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import API from './api';
 
-// --- THÊM IMPORT TOASTIFY ---
+// --- IMPORT TOASTIFY ---
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
@@ -60,17 +60,21 @@ function App() {
     try {
       const res = await API.get('/auth/profile');
       if (res.data.success) {
-        // Chỉ cập nhật nếu dữ liệu thực sự khác biệt để tránh re-render vòng lặp
         const newUser = res.data.data;
         setUser(newUser);
         localStorage.setItem('user', JSON.stringify(newUser));
       }
     } catch (error) {
       console.error('Lỗi đồng bộ dữ liệu User:', error);
-      // Nếu lỗi 401 (hết hạn) thì mới xóa token, lỗi 400 (PIN sai) thì kệ nó
+
+      /** * CHỈ xử lý đăng xuất nếu gặp lỗi 401 (Hết hạn token).
+       * Nếu là lỗi 400 (ví dụ sai mã PIN từ một request khác)
+       * thì KHÔNG xóa thông tin User để giữ nguyên UI hiện tại.
+       */
       if (error.response?.status === 401) {
         localStorage.removeItem('token');
         localStorage.removeItem('user');
+        setUser(null);
       }
     }
   };
@@ -83,19 +87,21 @@ function App() {
     <Router>
       <ScrollToTop />
       <div className="min-h-screen bg-gray-100 font-sans text-gray-900 antialiased">
-        {/* --- TOAST CONTAINER ĐẶT Ở ĐÂY ĐỂ HIỆN THÔNG BÁO TOÀN APP --- */}
+        {/* TOAST CONTAINER 
+          Z-index 99999 để đảm bảo thông báo luôn nằm trên các Modal lớp phủ.
+        */}
         <ToastContainer
           position="top-right"
           autoClose={3000}
           hideProgressBar={false}
-          newestOnTop={false}
+          newestOnTop={true}
           closeOnClick
           rtl={false}
           pauseOnFocusLoss
           draggable
           pauseOnHover
           theme="colored"
-          style={{ zIndex: 9999 }}
+          style={{ zIndex: 99999 }}
         />
 
         <Routes>
