@@ -19,6 +19,11 @@ API.interceptors.request.use((req) => {
         req.headers.Authorization = `Bearer ${token}`;
     }
     
+    // THÊM DÒNG NÀY: Ngăn chặn trình duyệt cache các request API (đặc biệt là lỗi)
+    if (req.method === 'post' || req.method === 'get') {
+        req.params = { ...req.params, _t: Date.now() };
+    }
+
     if (req.data instanceof FormData) {
         delete req.headers['Content-Type'];
     }
