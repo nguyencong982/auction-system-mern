@@ -60,11 +60,18 @@ function App() {
     try {
       const res = await API.get('/auth/profile');
       if (res.data.success) {
-        setUser(res.data.data);
-        localStorage.setItem('user', JSON.stringify(res.data.data));
+        // Chỉ cập nhật nếu dữ liệu thực sự khác biệt để tránh re-render vòng lặp
+        const newUser = res.data.data;
+        setUser(newUser);
+        localStorage.setItem('user', JSON.stringify(newUser));
       }
     } catch (error) {
       console.error('Lỗi đồng bộ dữ liệu User:', error);
+      // Nếu lỗi 401 (hết hạn) thì mới xóa token, lỗi 400 (PIN sai) thì kệ nó
+      if (error.response?.status === 401) {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+      }
     }
   };
 
