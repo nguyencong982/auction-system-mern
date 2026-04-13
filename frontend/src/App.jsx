@@ -2,6 +2,10 @@ import React, { useEffect, useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import API from './api';
 
+// --- THÊM IMPORT TOASTIFY ---
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+
 // Import Pages
 import Login from './pages/Auth/Login';
 import Register from './pages/Auth/Register';
@@ -22,7 +26,7 @@ import SoldProducts from './pages/Product/SoldProducts';
 import WithdrawMoney from './pages/Profile/WithdrawMoney';
 import AdminWithdrawal from './pages/Admin/AdminWithdrawal';
 import AdminDeposit from './pages/Admin/AdminDeposit';
-import AdminApproveProduct from './pages/Admin/AdminApproveProduct'; // <-- THÊM DÒNG NÀY
+import AdminApproveProduct from './pages/Admin/AdminApproveProduct';
 import SetupPaymentPin from './pages/Profile/SetupPaymentPin';
 
 const ScrollToTop = () => {
@@ -39,7 +43,6 @@ const PrivateRoute = ({ children, roleRequired }) => {
 
   if (!token) return <Navigate to="/login" replace />;
 
-  // Nếu route yêu cầu quyền admin mà user không phải admin thì đá về home
   if (roleRequired === 'admin' && user?.role !== 'admin') {
     return <Navigate to="/" replace />;
   }
@@ -73,6 +76,21 @@ function App() {
     <Router>
       <ScrollToTop />
       <div className="min-h-screen bg-gray-100 font-sans text-gray-900 antialiased">
+        {/* --- TOAST CONTAINER ĐẶT Ở ĐÂY ĐỂ HIỆN THÔNG BÁO TOÀN APP --- */}
+        <ToastContainer
+          position="top-right"
+          autoClose={3000}
+          hideProgressBar={false}
+          newestOnTop={false}
+          closeOnClick
+          rtl={false}
+          pauseOnFocusLoss
+          draggable
+          pauseOnHover
+          theme="colored"
+          style={{ zIndex: 9999 }}
+        />
+
         <Routes>
           {/* --- AUTH ROUTES --- */}
           <Route path="/login" element={<Login />} />
