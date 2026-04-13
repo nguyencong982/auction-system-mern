@@ -40,25 +40,28 @@ const WithdrawMoney = () => {
       });
 
       if (res.data.success) {
+        // THÀNH CÔNG: Thông báo -> Đóng Modal -> Về trang Home
         toast.success(res.data.message || 'Yêu cầu rút tiền thành công!');
         setShowPinModal(false);
-        setTimeout(() => navigate('/profile'), 1500);
+        // Chuyển hướng về Home sau 1.5s để người dùng kịp nhìn thông báo thành công
+        setTimeout(() => navigate('/'), 1500);
       }
     } catch (error) {
       console.error('FULL ERROR:', error);
       let message = 'Lỗi hệ thống';
 
-      // --- ĐOẠN QUAN TRỌNG: Lấy lỗi từ Backend ---
+      // Lấy message từ Backend
       if (error.response && error.response.data) {
         const data = error.response.data;
-        // Kiểm tra xem backend trả về field 'message' hay 'error'
         message = data.message || data.error || (typeof data === 'string' ? data : message);
       } else if (error.message) {
         message = error.message;
       }
 
+      // THẤT BẠI: Hiện lỗi ngay lập tức, giữ nguyên Modal để người dùng nhập lại PIN hoặc kiểm tra
       toast.error(message);
-      setPin(''); // Reset PIN để người dùng nhập lại
+      setPin(''); // Reset mã PIN sai để nhập lại
+      // KHÔNG đóng modal, KHÔNG navigate đi nơi khác
     } finally {
       setLoading(false);
     }
@@ -88,20 +91,19 @@ const WithdrawMoney = () => {
       </div>
 
       <form onSubmit={handleOpenPinModal} className="space-y-4">
+        {/* Input Số tiền */}
         <div>
-          <label className="mb-1 block text-sm font-medium text-gray-700">
-            Số tiền muốn rút (VNĐ)
-          </label>
+          <label className="mb-1 block text-sm font-medium text-gray-700">Số tiền rút (VNĐ)</label>
           <input
             type="number"
             required
-            placeholder="Ví dụ: 500000"
             className="w-full rounded-xl border border-gray-200 p-3 outline-none focus:ring-2 focus:ring-blue-500"
             value={formData.amount}
             onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
           />
         </div>
 
+        {/* Ngân hàng */}
         <div>
           <label className="mb-1 block text-sm font-medium text-gray-700">Tên ngân hàng</label>
           <select
@@ -119,18 +121,19 @@ const WithdrawMoney = () => {
           </select>
         </div>
 
+        {/* STK */}
         <div>
           <label className="mb-1 block text-sm font-medium text-gray-700">Số tài khoản</label>
           <input
             type="text"
             required
-            placeholder="Nhập số tài khoản"
             className="w-full rounded-xl border border-gray-200 p-3 outline-none focus:ring-2 focus:ring-blue-500"
             value={formData.accountNumber}
             onChange={(e) => setFormData({ ...formData, accountNumber: e.target.value })}
           />
         </div>
 
+        {/* Tên chủ TK */}
         <div>
           <label className="mb-1 block text-sm font-medium text-gray-700">
             Tên chủ tài khoản (Viết hoa)
@@ -138,7 +141,6 @@ const WithdrawMoney = () => {
           <input
             type="text"
             required
-            placeholder="NGUYEN VAN A"
             className="w-full rounded-xl border border-gray-200 p-3 uppercase outline-none focus:ring-2 focus:ring-blue-500"
             value={formData.accountName}
             onChange={(e) =>
@@ -155,12 +157,13 @@ const WithdrawMoney = () => {
         </button>
       </form>
 
+      {/* Modal PIN */}
       {showPinModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
-          <div className="animate-in zoom-in fade-in w-full max-w-sm rounded-3xl bg-white p-8 shadow-2xl duration-200">
+          <div className="animate-in zoom-in w-full max-w-sm rounded-3xl bg-white p-8 shadow-2xl duration-200">
             <h3 className="mb-2 text-center text-xl font-bold text-gray-800">Xác nhận mã PIN</h3>
             <p className="mb-8 px-4 text-center text-sm text-gray-500">
-              Nhập mã PIN thanh toán gồm 6 chữ số.
+              Nhập mã PIN 6 số để rút tiền.
             </p>
 
             <div className="relative mb-8">
@@ -180,14 +183,14 @@ const WithdrawMoney = () => {
                   setShowPinModal(false);
                   setPin('');
                 }}
-                className="flex-1 rounded-xl bg-gray-100 py-3 font-bold text-gray-600 transition-colors hover:bg-gray-200"
+                className="flex-1 rounded-xl bg-gray-100 py-3 font-bold text-gray-600 hover:bg-gray-200"
               >
                 HỦY
               </button>
               <button
                 onClick={handleConfirmWithdraw}
                 disabled={loading || pin.length < 6}
-                className="flex-1 rounded-xl bg-blue-600 py-3 font-bold text-white transition-all hover:bg-blue-700 disabled:bg-gray-300"
+                className="flex-1 rounded-xl bg-blue-600 py-3 font-bold text-white hover:bg-blue-700 disabled:bg-gray-300"
               >
                 {loading ? 'ĐANG XỬ LÝ...' : 'XÁC NHẬN'}
               </button>
