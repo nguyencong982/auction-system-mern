@@ -39,29 +39,30 @@ const WithdrawMoney = () => {
         pin: pin,
       });
 
-      if (res.data.success) {
-        // THÀNH CÔNG: Thông báo -> Đóng Modal -> Về trang Home
+      // CHỈ KHI THÀNH CÔNG (HTTP 200/201 và success: true)
+      if (res.data && res.data.success) {
         toast.success(res.data.message || 'Yêu cầu rút tiền thành công!');
         setShowPinModal(false);
-        // Chuyển hướng về Home sau 1.5s để người dùng kịp nhìn thông báo thành công
-        setTimeout(() => navigate('/'), 1500);
+
+        // Đợi 2 giây để người dùng đọc thông báo thành công rồi mới điều hướng
+        setTimeout(() => {
+          navigate('/home', { replace: true });
+        }, 2000);
       }
     } catch (error) {
-      console.error('FULL ERROR:', error);
-      let message = 'Lỗi hệ thống';
+      // KHI LỖI (Mã PIN sai, Số dư không đủ - Backend trả về 400)
+      console.error('Lỗi rút tiền:', error);
 
-      // Lấy message từ Backend
+      let errorMessage = 'Lỗi hệ thống';
       if (error.response && error.response.data) {
-        const data = error.response.data;
-        message = data.message || data.error || (typeof data === 'string' ? data : message);
-      } else if (error.message) {
-        message = error.message;
+        errorMessage = error.response.data.message || error.response.data.error || errorMessage;
       }
 
-      // THẤT BẠI: Hiện lỗi ngay lập tức, giữ nguyên Modal để người dùng nhập lại PIN hoặc kiểm tra
-      toast.error(message);
-      setPin(''); // Reset mã PIN sai để nhập lại
-      // KHÔNG đóng modal, KHÔNG navigate đi nơi khác
+      // Hiện thông báo lỗi NGAY TẠI TRANG NÀY
+      toast.error(errorMessage);
+
+      // Reset PIN để nhập lại, KHÔNG đóng modal, KHÔNG navigate đi đâu cả
+      setPin('');
     } finally {
       setLoading(false);
     }
@@ -97,6 +98,7 @@ const WithdrawMoney = () => {
           <input
             type="number"
             required
+            placeholder="Ví dụ: 100000"
             className="w-full rounded-xl border border-gray-200 p-3 outline-none focus:ring-2 focus:ring-blue-500"
             value={formData.amount}
             onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
@@ -121,7 +123,7 @@ const WithdrawMoney = () => {
           </select>
         </div>
 
-        {/* STK */}
+        {/* STK & Tên chủ TK */}
         <div>
           <label className="mb-1 block text-sm font-medium text-gray-700">Số tài khoản</label>
           <input
@@ -132,8 +134,6 @@ const WithdrawMoney = () => {
             onChange={(e) => setFormData({ ...formData, accountNumber: e.target.value })}
           />
         </div>
-
-        {/* Tên chủ TK */}
         <div>
           <label className="mb-1 block text-sm font-medium text-gray-700">
             Tên chủ tài khoản (Viết hoa)
@@ -160,22 +160,20 @@ const WithdrawMoney = () => {
       {/* Modal PIN */}
       {showPinModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
-          <div className="animate-in zoom-in w-full max-w-sm rounded-3xl bg-white p-8 shadow-2xl duration-200">
+          <div className="w-full max-w-sm rounded-3xl bg-white p-8 shadow-2xl">
             <h3 className="mb-2 text-center text-xl font-bold text-gray-800">Xác nhận mã PIN</h3>
             <p className="mb-8 px-4 text-center text-sm text-gray-500">
               Nhập mã PIN 6 số để rút tiền.
             </p>
 
-            <div className="relative mb-8">
-              <input
-                type="password"
-                maxLength={6}
-                autoFocus
-                className="w-full border-b-2 border-blue-500 bg-transparent pb-2 text-center text-4xl font-bold tracking-[0.8rem] outline-none"
-                value={pin}
-                onChange={(e) => setPin(e.target.value.replace(/[^0-9]/g, ''))}
-              />
-            </div>
+            <input
+              type="password"
+              maxLength={6}
+              autoFocus
+              className="mb-8 w-full border-b-2 border-blue-500 bg-transparent pb-2 text-center text-4xl font-bold tracking-[0.8rem] outline-none"
+              value={pin}
+              onChange={(e) => setPin(e.target.value.replace(/[^0-9]/g, ''))}
+            />
 
             <div className="flex space-x-4">
               <button
@@ -184,6 +182,7 @@ const WithdrawMoney = () => {
                   setPin('');
                 }}
                 className="flex-1 rounded-xl bg-gray-100 py-3 font-bold text-gray-600 hover:bg-gray-200"
+                disabled={loading}
               >
                 HỦY
               </button>
