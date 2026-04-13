@@ -17,7 +17,11 @@ const WithdrawMoney = () => {
   const [loading, setLoading] = useState(false);
 
   const handleOpenPinModal = (e) => {
-    e.preventDefault();
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+
     if (Number(formData.amount) < 50000) {
       return toast.error('Số tiền rút tối thiểu là 50.000đ');
     }
@@ -27,7 +31,13 @@ const WithdrawMoney = () => {
     setShowPinModal(true);
   };
 
-  const handleConfirmWithdraw = async () => {
+  const handleConfirmWithdraw = async (e) => {
+    // 1. CHẶN NỔI BỌT SỰ KIỆN: Tránh kích hoạt logic Re-render của App.jsx
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+
     if (pin.length !== 6) {
       return toast.error('Vui lòng nhập đủ 6 số PIN');
     }
@@ -39,29 +49,30 @@ const WithdrawMoney = () => {
         pin: pin,
       });
 
-      // CHỈ KHI THÀNH CÔNG (HTTP 200/201 và success: true)
+      // 2. XỬ LÝ KHI THÀNH CÔNG
       if (res.data && res.data.success) {
         toast.success(res.data.message || 'Yêu cầu rút tiền thành công!');
         setShowPinModal(false);
 
-        // Đợi 2 giây để người dùng đọc thông báo thành công rồi mới điều hướng
+        // Đợi 2 giây để người dùng đọc thông báo rồi mới điều hướng
         setTimeout(() => {
           navigate('/home', { replace: true });
         }, 2000);
       }
     } catch (error) {
-      // KHI LỖI (Mã PIN sai, Số dư không đủ - Backend trả về 400)
+      // 3. XỬ LÝ KHI LỖI (PIN sai, Số dư thiếu)
       console.error('Lỗi rút tiền:', error);
 
-      let errorMessage = 'Lỗi hệ thống';
-      if (error.response && error.response.data) {
-        errorMessage = error.response.data.message || error.response.data.error || errorMessage;
-      }
+      const errorMessage = error.response?.data?.message || 'Lỗi hệ thống';
 
-      // Hiện thông báo lỗi NGAY TẠI TRANG NÀY
-      toast.error(errorMessage);
+      // HIỆN THÔNG BÁO TẠI ĐÂY (Không bị biến mất do Interceptor đã được sửa)
+      toast.error(errorMessage, {
+        position: 'top-right',
+        autoClose: 3000,
+        toastId: 'withdraw-error', // Tránh hiện trùng lặp nhiều toast
+      });
 
-      // Reset PIN để nhập lại, KHÔNG đóng modal, KHÔNG navigate đi đâu cả
+      // Reset mã PIN để người dùng nhập lại ngay trên modal
       setPin('');
     } finally {
       setLoading(false);
@@ -70,6 +81,7 @@ const WithdrawMoney = () => {
 
   return (
     <div className="relative mx-auto mt-10 max-w-lg rounded-2xl border border-gray-100 bg-white p-8 shadow-xl">
+      {/* Header */}
       <div className="mb-6 flex items-center justify-between">
         <button onClick={() => navigate(-1)} className="text-gray-500 hover:text-blue-600">
           <svg
@@ -91,8 +103,8 @@ const WithdrawMoney = () => {
         <div className="w-6"></div>
       </div>
 
+      {/* Form thông tin ngân hàng */}
       <form onSubmit={handleOpenPinModal} className="space-y-4">
-        {/* Input Số tiền */}
         <div>
           <label className="mb-1 block text-sm font-medium text-gray-700">Số tiền rút (VNĐ)</label>
           <input
@@ -105,7 +117,6 @@ const WithdrawMoney = () => {
           />
         </div>
 
-        {/* Ngân hàng */}
         <div>
           <label className="mb-1 block text-sm font-medium text-gray-700">Tên ngân hàng</label>
           <select
@@ -123,7 +134,6 @@ const WithdrawMoney = () => {
           </select>
         </div>
 
-        {/* STK & Tên chủ TK */}
         <div>
           <label className="mb-1 block text-sm font-medium text-gray-700">Số tài khoản</label>
           <input
@@ -134,6 +144,7 @@ const WithdrawMoney = () => {
             onChange={(e) => setFormData({ ...formData, accountNumber: e.target.value })}
           />
         </div>
+
         <div>
           <label className="mb-1 block text-sm font-medium text-gray-700">
             Tên chủ tài khoản (Viết hoa)
@@ -160,7 +171,7 @@ const WithdrawMoney = () => {
       {/* Modal PIN */}
       {showPinModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
-          <div className="w-full max-w-sm rounded-3xl bg-white p-8 shadow-2xl">
+          <div className="w-full max-w-sm rounded-3xl bg-white p-8 shadow-2xl max-sm:max-w-xs">
             <h3 className="mb-2 text-center text-xl font-bold text-gray-800">Xác nhận mã PIN</h3>
             <p className="mb-8 px-4 text-center text-sm text-gray-500">
               Nhập mã PIN 6 số để rút tiền.
@@ -177,7 +188,9 @@ const WithdrawMoney = () => {
 
             <div className="flex space-x-4">
               <button
-                onClick={() => {
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
                   setShowPinModal(false);
                   setPin('');
                 }}
@@ -187,6 +200,7 @@ const WithdrawMoney = () => {
                 HỦY
               </button>
               <button
+                type="button"
                 onClick={handleConfirmWithdraw}
                 disabled={loading || pin.length < 6}
                 className="flex-1 rounded-xl bg-blue-600 py-3 font-bold text-white hover:bg-blue-700 disabled:bg-gray-300"
