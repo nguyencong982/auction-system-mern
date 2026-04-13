@@ -11,7 +11,6 @@ import { auth, requirePin } from '../middleware/auth.js';
 
 const router = express.Router();
 
-// Sử dụng cả auth (đăng nhập) và requirePin (đã có PIN)
 router.post('/request', auth, requirePin, createWithdrawal);
 
 router.get('/my-history', auth, getMyWithdrawals);

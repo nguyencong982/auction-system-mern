@@ -12,7 +12,7 @@ import withdrawalRoutes from './routes/withdrawalRoutes.js';
 import UserController from './controllers/UserController.js';
 import ProductController from './controllers/ProductController.js';
 import Message from './models/Message.js';
-import auth, { adminMiddleware } from './middleware/auth.js'; // Cập nhật: Thêm adminMiddleware
+import auth, { adminMiddleware } from './middleware/auth.js'; 
 import upload from './middleware/upload.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -27,10 +27,14 @@ if (!fs.existsSync(uploadDir)) {
     fs.mkdirSync(uploadDir, { recursive: true });
 }
 
-// --- 2. CẤU HÌNH SOCKET.IO ---
+// --- 2. CẤU HÌNH SOCKET.IO (Đã sửa cổng 5173) ---
 const io = new Server(httpServer, {
     cors: {
-        origin: ["https://auction-system-mern-psi.vercel.app", "http://localhost:3000"],
+        origin: [
+            "https://auction-system-mern-psi.vercel.app", 
+            "http://localhost:3000", 
+            "http://localhost:5173" // Thêm cổng này cho Vite
+        ],
         methods: ["GET", "POST"],
         credentials: true
     },
@@ -42,9 +46,13 @@ app.set('socketio', io);
 // 3. Kết nối Database
 connectDB();
 
-// --- 4. MIDDLEWARES ---
+// --- 4. MIDDLEWARES (Đã sửa cổng 5173) ---
 app.use(cors({
-    origin: ["https://auction-system-mern-psi.vercel.app", "http://localhost:3000"],
+    origin: [
+        "https://auction-system-mern-psi.vercel.app", 
+        "http://localhost:3000", 
+        "http://localhost:5173" // Thêm cổng này cho Vite
+    ],
     credentials: true
 }));
 app.use(express.json());
@@ -117,12 +125,10 @@ app.get('/api/users/follow-lists', auth, UserController.getFollowLists);
 app.post('/api/users/update-avatar', auth, upload.single('avatar'), UserController.updateProfileImage);
 app.post('/api/users/update-cover', auth, upload.single('cover'), UserController.updateProfileImage);
 
-// C. Routes Sản phẩm (Đã thêm chức năng Duyệt cho Admin)
-// C.1: NHÓM ROUTE ADMIN (Phải đặt TRƯỚC route có :id)
+// C. Routes Sản phẩm
 app.get('/api/products/admin/pending', auth, adminMiddleware, ProductController.getPendingAdmin);
 app.patch('/api/products/admin/approve/:id', auth, adminMiddleware, ProductController.approveProduct);
 
-// C.2: NHÓM ROUTE CHỨC NĂNG & CÔNG KHAI
 app.get('/api/products', ProductController.getAllActive);
 app.get('/api/products/my-sold-items', auth, ProductController.getMySoldProducts); 
 app.get('/api/products/check-has-products', auth, ProductController.checkUserHasProducts); 
